@@ -1,0 +1,12 @@
+appId: com.ditis.app
+productName: DITIS
+copyright: Copyright © 2024 DITIS
+directories:
+  output: dist
+  buildResources: resources
+files:
+  - from: .
+    filter:
+      - package.json
+      - app
+publish: null
