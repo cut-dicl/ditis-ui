@@ -4,7 +4,12 @@ import ChartDataLabels from "chartjs-plugin-datalabels";
 import { Panel } from 'primereact/panel';
 import { useTheme } from 'next-themes';
 
-export default function AppTimeChart({ analyzeResults }) {
+interface AppTimeChartProps {
+  analyzeResults: any;
+  print?: boolean;
+}
+
+export default function AppTimeChart({ analyzeResults, print }: AppTimeChartProps) {
 
   interface appdata {
     appID: string;
@@ -63,6 +68,67 @@ export default function AppTimeChart({ analyzeResults }) {
 
     }
   }, [analyzeResults]);
+
+
+  if (print) {
+    return (
+      <Chart
+          type="bar"
+          data={timeData}
+          options={{
+            indexAxis: "y",
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              x: {
+                beginAtZero: true,
+                ticks: {
+                  color: theme.theme === "dark" ? "lightgrey" : "black"
+                }  
+              },
+              y: {
+                ticks: {
+                  autoSkip: false,
+                  color: theme.theme === "dark" ? "lightgrey" : "black"
+                }
+              },
+            },
+            plugins: {
+              legend: {
+                display: false,
+                color: theme.theme === "dark" ? "lightgrey" : "black"
+              },
+              title: {
+                display: true,
+                text: "Elapsed time for each application run (in seconds)",
+                color: theme.theme === "dark" ? "lightgrey" : "black"
+              },
+              datalabels: {
+                clamp: true,
+                anchor: (value) => {
+                  return value.dataset.data[value.dataIndex][1] - value.dataset.data[value.dataIndex][0] < 10 ? "end" : "";
+                },
+                align: (value) => {
+                  return value.dataset.data[value.dataIndex][1] - value.dataset.data[value.dataIndex][0] < 10 ? "end" : "";
+                },
+                formatter: (value: any, context: any) => {
+                  if (value[1] - value[0] === 0)
+                    return "<1s";
+                  return value[1]-value[0] + "s";
+                },
+                color: theme.theme === "dark" ? "white" : "black",
+                font: {
+                  weight: 'bold'
+              }
+              },
+            },
+            
+          }}
+          height={`${timeData.labels.length * 30 + 150}px"`}
+          plugins={[ChartDataLabels]}
+        />
+    )
+  }
 
   return (
     <Panel header="Application run time" className='my-4'>

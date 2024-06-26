@@ -5,7 +5,12 @@ import { Dropdown } from "primereact/dropdown";
 import { Panel } from 'primereact/panel';
 import { useTheme } from 'next-themes';
 
-export default function FileSizeChart({analyzeResults}) {
+interface FileSizeChartProps {
+  analyzeResults: any;
+  print?: boolean;
+}
+
+export default function FileSizeChart({analyzeResults, print}: FileSizeChartProps) {
 
   interface appdata {
     count: number;
@@ -90,7 +95,56 @@ export default function FileSizeChart({analyzeResults}) {
 
   useEffect(() => {
     getFiles();
-  },[unitPrecision,analyzeResults]);
+  }, [unitPrecision, analyzeResults]);
+  
+  if (print) {
+    console.log("print");
+    return(
+    <Chart
+        type="bar"
+        data={fileData}
+        options={{
+          indexAxis: "y",
+          responsive: true,
+          maintainAspectRatio: false,
+          aspectRatio: 1,
+          scales: {
+            x: {
+              ticks: {
+                autoSkip: false,
+                color: theme.theme === "dark" ? "lightgrey" : "black"
+              }
+            },
+            y: {
+              beginAtZero: true,
+              ticks: {
+                color: theme.theme === "dark" ? "lightgrey" : "black"
+              }
+            },
+          },
+          plugins: {
+            datalabels: {
+              color: theme.theme === "dark" ? "lightgrey" : "black",
+              font: {
+                weight: 'bold'
+              }
+            },
+            legend: {
+              display: false
+            },
+            title: {
+              display: true,
+              text: "File sizes",
+              color: theme.theme === "dark" ? "lightgrey" : "black"
+            }
+          }
+        }}
+        plugins={[ChartDataLabels]}
+      />
+    )
+  }
+
+
 
   return (
     <Panel header="File Sizes" className="flex flex-col my-4">

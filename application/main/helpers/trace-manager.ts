@@ -1,3 +1,4 @@
+import { getPreference } from "../api/preferences";
 import { createTraces } from "./create-files";
 
 const app = require("electron").app;
@@ -100,7 +101,11 @@ export async function getNLines(path: String) {
     }
 }
 
-export async function traceAnalyzer(path: String, javaPath: String) {
+export async function traceAnalyzer(path: String) {
+    let javaPath = getPreference("javaPath");
+    if (!javaPath) {
+        return null;
+    }
     return await service.analyzeTrace(path, javaPath);
 }
 

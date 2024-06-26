@@ -1,6 +1,9 @@
 const fs = require('fs');
 import {app, ipcMain} from 'electron';
 import { createPreferences } from '../helpers/create-files';
+import axios from 'axios';
+import { handleAxiosAuth } from './serverIpc';
+import { createWindow } from '../helpers';
 
 export function preferencesIpc() {
     ipcMain.handle('open-preferences-file', async (event, arg) => {
@@ -43,10 +46,16 @@ export function preferencesIpc() {
                 let unchanged = true;
                 if (!fs.existsSync(value)) {
                     content.javaPath = "";
+                } else if (value.endsWith(".jar")) {
+                    const path = require('path');
+                    if (path.basename(value).includes("service")) {
+                        content.javaPath = value;
+                        unchanged = false;
+                    }
                 } else if (!value.endsWith(".jar")) {
                     const files = fs.readdirSync(value);
                     files.some((file: string) => {
-                        if(file.includes("service") && file.endsWith(".jar")){
+                        if (file.includes("service") && file.endsWith(".jar")) {
                             content.javaPath = value + "/" + file;
                             unchanged = false;
                             return true;
@@ -58,6 +67,8 @@ export function preferencesIpc() {
                 }
                 await fs.promises.writeFile(`${app.getPath('userData')}/preferences.json`, JSON.stringify(content), 'utf8');
                 return content.javaPath;
+            } else if (key === "onlineServer") {
+                await handleAxiosAuth(value.auth);
             }
 
             if (typeof value === "object" && !Array.isArray(value))
@@ -93,10 +104,7 @@ export function preferencesIpc() {
 
     ipcMain.handle('get-preferences-key', async (event, arg) => {
         try {
-            const filePath = `${app.getPath('userData')}/preferences.json`;
-            let contents = await fs.readFileSync(filePath, 'utf8');
-            contents = JSON.parse(contents);
-            return contents[arg.key];
+            getPreference(arg.key);
         } catch (err) {
             console.log(err);
             return false;
@@ -113,4 +121,71 @@ export function preferencesIpc() {
         app.relaunch()
         app.exit()
     });
+
+
+    ipcMain.handle("check-simulator-version", async (event, arg) => {
+        try {
+            const filePath = `${app.getPath('userData')}/preferences.json`;
+            const javaPath = getPreference("javaPath");
+            const { address } = getPreference("onlineServer");
+            if (javaPath === "") {
+                throw new Error("No simulator installed");
+            }
+
+            if (address === "") {
+                throw new Error("Please select a server in online mode");
+            }
+
+            // Regular expression pattern to match the version number
+            const versionPattern = /(\d+(\.\d+)+)-.*?\.jar$/;
+
+            // Extract the version number from the input path
+            const match = javaPath.match(versionPattern);
+
+            if (!match) {
+                throw new Error("Invalid simulator version");
+            }
+
+            let res = await axios.get(`${address}/api/auth/version`);
+            if (res.status !== 200) {
+                throw new Error("Server is unreachable");
+            }
+
+            const serverVersion = res.data.version;
+            if (parseFloat(serverVersion) > parseFloat(match[1])) {
+                return { code: 202, data: `New version available: ${serverVersion}` };
+            }           
+            return { code: 200, data: "Simulator is up to date!" };
+        } catch (err) {
+            if (!err.response)
+                return { code: 500, error: "Server is unreachable" };
+            return { code:500, error: err.message? err.message : err};
+        }
+    });
+
+
+    ipcMain.handle("open-manual", async (event, arg) => {
+        let win = createWindow("manual", {
+            width: 1000,
+            height: 600,
+            icon: "resources/icon.png",
+            autoHideMenuBar: true,
+          });
+          win.loadFile('manual.pdf') 
+    });
+            
+
+}
+
+type PreferenceProperty = "javaPath" | "simulationPreference" | "onlineServer" | "hardwareAcceleration" | "theme";
+
+export function getPreference(key: PreferenceProperty) {
+    try {
+        const filePath = `${app.getPath('userData')}/preferences.json`;
+        let contents = fs.readFileSync(filePath, 'utf8');
+        contents = JSON.parse(contents);
+        return contents[key];
+    } catch (err) {
+        return "";
+    }
 }

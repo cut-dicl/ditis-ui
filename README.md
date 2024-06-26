@@ -4,9 +4,7 @@ DITIS is a new comprehensive simulator that models the end-to-end execution of f
 
 ***
 
-## Installation
-
-Using Windows 10
+## Installation on Windows 10
 
 ### Prerequisites
 
@@ -14,7 +12,7 @@ General Prerequisites:
 - NodeJS (v20.12.0 LTS) from [https://nodejs.org/en](https://nodejs.org/en)
 - Java 17 for DITIS v2.0 when using DITIS UI in local mode
 
-### Compilation
+### Compilation of DITIS Application
 
 Execute the `install.bat` script to install the required dependencies.
 
@@ -29,6 +27,50 @@ build.bat
 ```
 
 ***
+
+## Installation on Ubuntu 22.04
+
+### Prerequisites
+
+General Prerequisites:
+- NodeJS (v20.12.0 LTS) from [https://nodejs.org/en](https://nodejs.org/en)
+- Java 17 for DITIS v2.0 when using DITIS UI in local mode
+
+Install nvm (Node Version Manager) and NodeJS
+```bash
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+. ~/.bashrc
+nvm install 20
+node -v
+npm -v
+```
+
+Install Java JDK
+```bash
+sudo apt install openjdk-17-jdk
+java --version
+```
+
+### Compilation of DITIS Application
+
+Install the required dependencies.
+
+```bash
+cd smml/application
+npm i
+npm update
+```
+
+Generate the stand-alone executable for the UI application.
+
+```bash
+call npm i
+call npm run build
+start "" "build"
+```
+
+***
+
 
 ## Usage
 

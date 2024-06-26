@@ -2,19 +2,21 @@ import axios from "axios";
 import { app } from "electron";
 import { runOptimizer as optimizer } from "../service/optimizer";
 import { parseCSV } from "./parse-csv";
-import { addConfigToJson, createConfigFile } from "./configuration-manager";
+import { addConfigToJson } from "./configuration-manager";
 import { convertProperties_Json } from "./convertJSON_Properties";
 import { getTraceExtension } from "./trace-manager";
+import { getPreference } from "../api/preferences";
 const fs = require("fs");
-const path = require("path");
-const kill = require("tree-kill");
 
 
 //TODO: Implement account check
 export async function runOnlineOptimizer(arg) {
     try {
-        let res = await axios.post(arg.address+"/api/optimizer/run", { trace: arg.trace, configuration: arg.configuration, name: arg.name,
-            reportsEnabled: arg.reportsEnabled, tracesEnabled: arg.tracesEnabled, maxMemory: arg.maxMemory, auth: arg.auth, maxEvents: arg.maxEvents 
+        let {address} = getPreference("onlineServer");
+
+
+        let res = await axios.post(address+"/api/optimizer/run", { trace: arg.trace, configuration: arg.configuration, name: arg.name,
+            reportsEnabled: arg.reportsEnabled, tracesEnabled: arg.tracesEnabled, maxMemory: arg.maxMemory, maxEvents: arg.maxEvents 
         })
         if(res && res.status === 200 && res.data !== null)
             return { code: 200, data: res.data };
@@ -30,6 +32,7 @@ export async function runLocalOptimizer(arg) {
     try {
         const fs = require("fs");
         const json = fs.readFileSync(app.getPath("userData") + "/optimizations/optimizations.json");
+        const javaPath = getPreference("javaPath");
         const optimizations = JSON.parse(json);
         let id = 1;
         if (optimizations.optimizations.length > 0) {
@@ -38,9 +41,12 @@ export async function runLocalOptimizer(arg) {
 
         //Create directory
         const path = app.getPath("userData") + "/optimizations/" + id
+
+        if (!fs.existsSync(path))
+            fs.mkdirSync(path);
         
         //Start optimizer and check pid
-        let pid = await optimizer(app.getPath("userData") + "/traces/" + arg.trace + await getTraceExtension(arg.trace), arg.configuration, path, arg.reportsEnabled, arg.tracesEnabled, arg.maxEvents, arg.maxMemory, arg.javaPath,
+        let pid = await optimizer(app.getPath("userData") + "/traces/" + arg.trace + await getTraceExtension(arg.trace), arg.configuration, path, arg.reportsEnabled, arg.tracesEnabled, arg.maxEvents, arg.maxMemory, javaPath,
             app.getPath('userData'), arg.debugEnabled);
         if (pid === -1 || pid === undefined || pid === 0)
             return { code: 500, data: -1, error: "Error running optimizer" };
@@ -62,18 +68,25 @@ export async function runLocalOptimizer(arg) {
         
         return { code: 200, data: { id, pid, name: arg.name === "" ? "Optimization " + id : arg.name } };
     } catch (err) {
-        console.log(err);
-        return { code: 500, data: -1, error: err.message };
+        console.log(err.message);
+        let error = JSON.parse(err.message);
+        return { code: 500, data: -1, error: error.exception? error.exception : "Error running optimizer" };
     }
 }
 
 
 //checkOptimizer is a function to check the optimizations with pid > 0 in json and check if they are still running
-export async function checkOnlineOptimizer(address, id, auth) {
-    let res = await axios.post(`${address}/api/optimizer/check`, { id, auth }).then((res) => {
-        return res;
-    });
-    return { code: 200, data: res.data};
+export async function checkOnlineOptimizer() {
+    try {
+        let { address } = getPreference("onlineServer");
+        if (address === "")
+            return { code: 500, data: null, error: "Server is not set" };
+
+        let res = await axios.post(`${address}/api/optimizer/running`)
+        return { code: 200, data: res.data };
+    } catch (err) {
+        return { code: 500, data: null, error: "Server did not respond" };
+    }
 }
 
 export async function checkLocalOptimizer() {
@@ -122,8 +135,10 @@ export async function getLocalOptimizationList() {
     return { code: 200, data: optimizations.optimizations};
 }
 
-export async function getOnlineOptimizationList(address, auth) {
-    return await axios.post(`${address}/api/optimizer/optimizations`, { auth }).then((res) => {
+export async function getOnlineOptimizationList() {
+    let {address} = getPreference("onlineServer");
+
+    return await axios.post(`${address}/api/optimizer/optimizations`).then((res) => {
         if(res.status === 200)
             return { code: 200, data: res.data };
         else
@@ -140,6 +155,16 @@ export async function getLocalOptimizerData(id) {
         return{code: 500, data: null, error: "Optimization not specified"};
     }
 
+    const errorFile = app.getPath('userData') + "/optimizations/" + id + "/error.json";
+    if (fs.existsSync(errorFile)) {
+        let error = fs.readFileSync(errorFile, 'utf8');
+        try {
+            error = JSON.parse(error);
+        } catch (err) {
+            //
+        }
+        return { code: 500, data: null, error: error.exception };
+    }
     const file = app.getPath('userData') + "/optimizations/" + id + "/final_report.csv";
 
     //Check if file exists
@@ -153,20 +178,23 @@ export async function getLocalOptimizerData(id) {
     return { code: 200, data: results};
 }
 
-export async function getOnlineOptimizerData(serverAddress, id, auth) {
-    let res = await axios.post(`${serverAddress}/api/optimizer/getdata`, { id, auth }).then((res) => {
-        return res;
-    });
-    if (res.status === 200)
+export async function getOnlineOptimizerData(id) {
+    let {address} = getPreference("onlineServer");
+
+    let res = await axios.post(`${address}/api/optimizer/getdata`, { id });
+    if (res.status === 200) {
+        if (res.data.error)
+            return { code: 500, data: null, error: res.data.error.exception };
         return { code: 200, data: res.data };
+    }
     else
-        return { code: 500, data: null };
+        return { code: 500, data: null, error: res.data.error? res.data.error : "Error getting data"};
 }
 
 
-
 //getLocalOptimizerConfig is a function to get the best configuration from the optimization directory
-export async function getLocalOptimizerConfig(id,javaPath) {
+export async function getLocalOptimizerConfig(id) {
+    const javaPath = getPreference("javaPath");
     if(id == null){
         return{code: 500, data: null, error: "Optimization not specified"};
     }
@@ -179,10 +207,10 @@ export async function getLocalOptimizerConfig(id,javaPath) {
     return { code: 200, data: await convertProperties_Json(config,"Storage",javaPath)};
 }
 
-export async function getOnlineOptimizerConfig(serverAddress, user, id) {
-    let res = await axios.get(`${serverAddress}/optimizerconfig`, { params: { id: id, user: user } }).then((res) => {
-        return res;
-    });
+export async function getOnlineOptimizerConfig(id) {
+    let {address} = getPreference("onlineServer");
+
+    let res = await axios.get(`${address}/api/optimizer/config/get`, { params: { id: id } })
     if (res.status === 200)
         return { code: 200, data: res.data };
     else
@@ -196,10 +224,16 @@ export async function saveLocalOptimizerConfig(id, configName, configDescription
     if(id == null){
         return{code: 500, data: null, error: "Optimization not specified"};
     }
-    let filePath = app.getPath('userData') + `/configurations/${configName}.properties`
+    let filePath = app.getPath('userData') + `/configurations/`
     const file = app.getPath('userData') + "/optimizations/" + id + "/best_conf.properties";
-    if (await addConfigToJson({ configPath: filePath, configName: configName, confDescription: configDescription,configType:"Storage", path: filePath })) {
-        fs.copyFile(file, filePath, (err) => {
+    if (await addConfigToJson({
+        configPath: filePath + `${configName}.properties`,
+        configName: configName,
+        confDescription: configDescription,
+        configType: "Storage",
+        path:  filePath + "configurations.json"
+        })) {
+        fs.copyFileSync(file, filePath + `${configName}.properties`, (err) => {
             if (err) {
                 console.log(err)
                 throw new Error("Error copying file")
@@ -212,20 +246,19 @@ export async function saveLocalOptimizerConfig(id, configName, configDescription
 }
 
 
-export async function saveOnlineOptimizerConfig(serverAddress, user, id, config) {
-    let res = await axios.post(`${serverAddress}/saveoptimizerconfig`, { id: id, user: user, config: config }).then((res) => {
-        return res;
-    });
+export async function saveOnlineOptimizerConfig(id, config) {
+    let {address} = getPreference("onlineServer");
+    let res = await axios.post(`${address}/api/optimizer/config/save`, { id,config})
     if (res.status === 200)
         return { code: 200, data: null };
     else
         return { code: 500, data: null };
 }
 
-export async function deleteOnlineOptimization(address, auth, id) {
-    let res = await axios.post(`${address}/api/optimizer/delete`, { id, auth }).then((res) => {
-        return res;
-    });
+export async function deleteOnlineOptimization(id) {
+    let {address} = getPreference("onlineServer");
+
+    let res = await axios.post(`${address}/api/optimizer/delete`, { id })
     if (res.status === 200)
         return { code: 200, data: null };
     else
@@ -325,10 +358,29 @@ export async function refreshLocalOptimization(id) {
             if (process.kill(obj.pid, 0))
                 return { code: 200, data: { id: id, pid: obj.pid, date: obj.date } };
         } catch (err) {
-            obj.pid = 0;
+            let pid;
+            if (fs.existsSync(path + "/" + id + "/error.json")) 
+                pid = -2;
+            else if (!fs.existsSync(path + "/" + id + "/final_report.csv"))
+                pid = -2;
+            else
+                pid = 0;
+        
+            obj.pid = pid;
             fs.writeFileSync(path + "/optimizations.json", JSON.stringify(optimizations));
-            return { code: 200, data: { id: id, pid: 0, date: obj.date } };
+            return { code: 200, data: { id: id, pid , date: obj.date } };
         }       
     }
     return { code: 200, data: { id: id, pid: 0, date: obj.date } };
+}
+
+export async function refreshOnlineOptimization(id) {
+    let {address} = getPreference("onlineServer");
+
+    let res = await axios.post(`${address}/api/optimizer/check`, { id })
+    console.log(res);
+    if (res.status === 200)
+        return { code: 200, data: res.data };
+    else
+        return { code: 500, data: null };
 }

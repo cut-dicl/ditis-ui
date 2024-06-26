@@ -8,13 +8,8 @@ export const useTraces = () => {
   const appController = useContext(AppController);
 
   useEffect(() => {
-    console.log(appController);
     ipcRenderer
-      .invoke("get-trace-list", {
-        mode: appController.mode,
-        auth: appController.onlineServer.auth,
-        address: appController.onlineServer.address,
-      })
+      .invoke("get-trace-list")
       .then((result) => {
         console.log(result);
         setTraces(result.data);

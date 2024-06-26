@@ -10,21 +10,23 @@ import {
 import { Content } from "../FormInput";
 import { VarianceClassOption } from "./VarianceClassOption";
 import { VarianceNumberOption } from "./VarianceNumberOption";
-import { VarianceFormContext } from "../../../hooks/useContext-hooks/variance-form-hook/variance-form-hook";
 import { Tooltip } from "primereact/tooltip";
 import { Button } from "primereact/button";
 import VarianceBoolean from "./VarianceBoolean";
+import { ConfFormContext } from "../../../hooks/useContext-hooks/conf-form-hook/conf-form-hook";
 
 interface IVarianceOptions {
   id: number;
   remove: any;
   varianceSettings: any;
+  setButtonDisabled: any;
 }
 
 export const VarianceOptions = ({
   remove,
   id,
   varianceSettings,
+  setButtonDisabled,
 }: IVarianceOptions) => {
   const [selectedLayer, setSelectedLayer] = useState("");
   const [selectedOption, setSelectedOption] = useState("");
@@ -33,7 +35,7 @@ export const VarianceOptions = ({
   const [isClass, setIsClass] = useState(false);
   const [isBoolean, setIsBoolean] = useState(false);
   const [classOptions, setClassOptions] = useState([]);
-  const VarFormCtx = useContext(VarianceFormContext);
+  const VarFormCtx = useContext(ConfFormContext);
   const options = VarFormCtx.varianceOptions;
   const firstRender = useRef(true);
 
@@ -80,7 +82,6 @@ export const VarianceOptions = ({
       firstRender.current = false;
     } else {
       if (optionItem && Object.keys(varianceSettings).length > 0) {
-        console.log("this ran");
         handleOptionChange({ target: { value: optionItem.key } });
       }
     }
@@ -101,7 +102,6 @@ export const VarianceOptions = ({
   };
 
   const handleOptionChange = (event): void => {
-    console.log("this ran");
     VarFormCtx.handleVarianceOptionsChange(
       selectedLayer,
       event.target.value,
@@ -122,16 +122,18 @@ export const VarianceOptions = ({
         }
       });
 
-      if ("alternatives" in alternativesExist) {
-        setClassOptions(alternativesExist.alternatives);
-        setHasAlternatives(true);
-        if (event.target.value.includes("class")) setIsClass(true);
-      } else if (event.target.value.includes("enabled")) {
-        setIsBoolean(true);
-      } else {
-        setIsBoolean(false);
-        setHasAlternatives(false);
-        setIsClass(false);
+      if (alternativesExist) {
+        if ("alternatives" in alternativesExist) {
+          setClassOptions(alternativesExist.alternatives);
+          setHasAlternatives(true);
+          if (event.target.value.includes("class")) setIsClass(true);
+        } else if (event.target.value.includes("enabled")) {
+          setIsBoolean(true);
+        } else {
+          setIsBoolean(false);
+          setHasAlternatives(false);
+          setIsClass(false);
+        }
       }
     }
 
@@ -147,8 +149,6 @@ export const VarianceOptions = ({
     setLayerOptions([]);
     VarFormCtx.handleRemoval(selectedOption, selectedLayer);
   };
-
-  console.log(VarFormCtx.varianceObject);
 
   const parameterOptionsTemplate = (availableOptions) => {
     return (
@@ -226,6 +226,7 @@ export const VarianceOptions = ({
             <VarianceNumberOption
               readOnly={varianceSettings.readOnly}
               varianceOption={selectedOption}
+              setButtonDisabled={setButtonDisabled}
               editValue={
                 optionItem &&
                 Object.keys(varianceSettings).length > 0 &&

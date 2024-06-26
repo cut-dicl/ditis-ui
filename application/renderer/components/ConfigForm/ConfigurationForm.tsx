@@ -1,13 +1,11 @@
 import { Steps } from "primereact/steps";
 import { ProgressSpinner } from "primereact/progressspinner";
 import React, { useContext } from "react";
-
 import { NextPreviousButtons } from "../../UI/next-previous-buttons";
 import { ConfirmationDialog } from "./ConfirmationDialog";
 import { FormInput } from "./FormInput";
 import { useConfForm } from "../../hooks/custom-hooks/useConfForm";
 import { ConfFormContext } from "../../hooks/useContext-hooks/conf-form-hook/conf-form-hook";
-import { NextPreviousButtonContext } from "../../hooks/useContext-hooks/next-previous-buttons-hook/next-previous-buttons-hook";
 import {
   configurationContentShown,
   IConfSettings,
@@ -31,7 +29,6 @@ const ConfigurationForm = ({
   const { isLoading, longNames } = useConfForm(confSettings);
 
   const confFormCtx = useContext(ConfFormContext);
-  const nextPrevCtx = useContext(NextPreviousButtonContext);
 
   if (isLoading) {
     // @ts-ignore
@@ -54,11 +51,14 @@ const ConfigurationForm = ({
   );
 
   const handleCancelButton = () => {
+    console.log("sss");
     Swal.fire({
       icon: "question",
       title: `Are you sure you want go back`,
-      color: document.documentElement.className == "dark" ? "white" : "",
-      background: document.documentElement.className == "dark" ? "#1f2937" : "",
+      color: document.documentElement.className.includes("dark") ? "white" : "",
+      background: document.documentElement.className.includes("dark")
+        ? "#1f2937"
+        : "",
       showDenyButton: true,
       showConfirmButton: true,
       confirmButtonText: "Yes",
@@ -66,7 +66,6 @@ const ConfigurationForm = ({
       denyButtonText: `Cancel`,
       reverseButtons: true,
     }).then((result) => {
-      console.log(result);
       if (result.isConfirmed) showForm("none");
     });
   };
@@ -85,9 +84,9 @@ const ConfigurationForm = ({
           );
         })}
         <Steps
-          onSelect={(e) => nextPrevCtx.handleSelect(e.index)}
+          onSelect={(e) => confFormCtx.handleSelect(e.index)}
           model={stepsModel}
-          activeIndex={nextPrevCtx.activeIndex}
+          activeIndex={confFormCtx.activeIndex}
           readOnly={false}
         />
         <FormInput
@@ -98,7 +97,11 @@ const ConfigurationForm = ({
         {showBackButton ? (
           <button
             className="bg-gray-100 shadow-md hover:bg-gray-400 hover:dark:bg-gray-600 text-black dark:text-white dark:bg-[#313e4f] font-bold py-2 px-4 border border-gray-900 rounded"
-            onClick={handleCancelButton}
+            onClick={
+              confSettings.readOnly
+                ? () => showForm("none")
+                : () => handleCancelButton()
+            }
           >
             Cancel
           </button>

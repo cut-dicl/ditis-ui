@@ -1,13 +1,9 @@
 import { useContext } from "react";
 import { ReportContext } from "../../hooks/useContext-hooks/simulator-report-hook/simulator-report-hook";
 import { IReportObject } from "../../hooks/useContext-hooks/simulator-report-hook/simulator-report-hook-provider";
-import { Chart } from "primereact/chart";
-import { DataTable } from "primereact/datatable";
-import { Column } from "primereact/column";
-import BorderHeader from "../../UI/BorderHeader";
 import PieWithTableReport from "./PieWithTableReport";
 
-const InitializerLayerReport = () => {
+const InitializerLayerReport = (props) => {
   const reportCtx = useContext(ReportContext);
 
   const initializerReportContent: IReportObject =
@@ -58,12 +54,25 @@ const InitializerLayerReport = () => {
   });
 
   return (
-    <div>
+    <div className="avoid-page-break">
+      {props.printMode && (
+        <div className="flex justify-center mb-5">
+          <span
+            style={{
+              fontFamily: "Montserrat, sans-serif",
+            }}
+            className="font-bold text-center text-2xl"
+          >
+            Initializer Layer
+          </span>
+        </div>
+      )}
       <PieWithTableReport
         content={initializerReportContent}
         tableData={initializerReportTableData}
         pieTitle="Initializer Request Statistics"
         tableTitle="Initializer Request Metrics"
+        printMode={props.printMode}
       />
     </div>
   );

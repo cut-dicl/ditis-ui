@@ -10,6 +10,7 @@ import {
   convertProperties_Json_Variance,
 } from "./convertJSON_Properties";
 import { configurationFileTypes } from "../../renderer/components/ConfigForm/ConfigurationPage";
+import { getPreference } from "../api/preferences";
 
 const storage = process.env.STORAGE_PATH;
 
@@ -60,17 +61,17 @@ export async function addConfigToJson({
   let configFileString = fetchConfigJson(path);
   let configFile: { configurations: config[] } = JSON.parse(configFileString);
 
-  const found = configFile.configurations.find((item) => {
-    if (item.name === configName) {
-      return item;
-    }
-  });
-
-  if (found) {
-    throw new Error("A configuration file with this name already exists");
-  }
-
+  
   let id = fetchMaxID(configFile);
+
+
+  if(configName.length === 0)
+    configName = "Configuration "+ id;
+  else {
+    if (fs.existsSync( app.getPath("userData") + `/configurations/`  +  `${configName}.properties`)) {
+      throw new Error("A configuration file with this name already exists");
+    }
+  }
 
   configFile.configurations.push({
     id,
@@ -83,11 +84,10 @@ export async function addConfigToJson({
   });
 
   try {
-    await fs.promises.writeFile(path, JSON.stringify(configFile));
+    await fs.writeFileSync(path, JSON.stringify(configFile));
     return true;
   } catch (error) {
-    console.log("failed to write to file");
-    return false;
+    throw new Error(error)
   }
 }
 
@@ -96,12 +96,11 @@ export async function addConfigToJson({
 // not sure
 export async function getConfigurationList() {
   const confFolderPath = app.getPath("userData") + "/configurations";
-  refreshConfigurationList(confFolderPath);
+  refreshConfigurationList(confFolderPath);//
   const path = app.getPath("userData") + "/configurations/configurations.json";
 
   const confList = fetchConfigJson(path);
 
-  console.log(confList)
   if (confList) {
     return JSON.parse(confList);
   } else {
@@ -109,7 +108,8 @@ export async function getConfigurationList() {
   }
 }
 
-export async function getConfigById(id, javaPath) {
+export async function getConfigById(id) {
+  const javaPath = getPreference("javaPath");
   const path = app.getPath("userData") + "/configurations/configurations.json";
   const content = fetchConfigJson(path);
   let configFile: { configurations: config[] } = JSON.parse(content);
@@ -230,25 +230,31 @@ export async function updateConfig(
 
   let oldFileName = found.name;
 
+  const dupe = configFile.configurations.find((item) => {
+    if (item.name === confName && item.id !== id) {
+      return item;
+    }
+  });
+
+  if (dupe) {
+    throw new Error("A configuration file with this name already exists");
+  }
+
   if (found) {
     let filePath;
     let newFilePath;
-
-    if (appMode === "Online") {
-      filePath = `${storage}/userdata/${user}/configurations/${oldFileName}.properties`;
-      newFilePath = `${storage}/userdata/${user}/configurations/${confName}.properties`;
-    } else if (appMode === "Local") {
+    
       filePath =
         app.getPath("userData") + `/configurations/${oldFileName}.properties`;
       newFilePath =
         app.getPath("userData") + `/configurations/${confName}.properties`;
-    }
 
     configFile.configurations.forEach((item) => {
       if (item.id === id) {
         item.name = confName;
         item.description = description;
         item.path = newFilePath;
+        item.dateModified = Date.now() / 1000
       }
     });
 
@@ -258,9 +264,7 @@ export async function updateConfig(
       type === "simulator"
         ? await convertJSON_Properties(confObject)
         : await convertJSON_Properties_Variance(confObject);
-    fs.rename(filePath, newFilePath, (error: NodeJS.ErrnoException) => {
-      console.log(error);
-    });
+    fs.renameSync(filePath, newFilePath);
 
     fs.writeFile(
       newFilePath,
@@ -277,7 +281,12 @@ export async function updateConfig(
 }
 
 export function createConfigFile(filePath, propertiesText) {
-  fs.writeFileSync(filePath, propertiesText);
+  console.log(filePath)
+  try{
+    fs.writeFileSync(filePath, propertiesText);
+  }catch(err){
+    throw new Error(err)
+  }
 }
 
 function fetchConfigJson(path) {

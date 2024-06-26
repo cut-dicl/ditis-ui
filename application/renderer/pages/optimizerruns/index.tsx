@@ -50,16 +50,7 @@ function OptimizerRuns() {
 
   const accept = (row) => {
     ipcRenderer
-      .invoke("delete-optimization", {
-        id: row.id,
-        mode: controller.mode,
-        address: controller.onlineServer.address
-          ? controller.onlineServer.address
-          : null,
-        auth: controller.onlineServer.auth
-          ? controller.onlineServer.auth
-          : null,
-      })
+      .invoke("delete-optimization", {id: row.id})
       .then((result) => {
         if (result.code === 500) {
           showToast("error", "Error", result.error);
@@ -69,7 +60,7 @@ function OptimizerRuns() {
         showToast(
           "success",
           "Success",
-          `${row.name} Optimization deleted succesfully`
+          `${row.name} deleted succesfully`
         );
       });
   };
@@ -86,9 +77,9 @@ function OptimizerRuns() {
           cancelButtonText: "Cancel",
           confirmButtonText: "Configure",
           reverseButtons: true,
-          color: document.documentElement.className == "dark" ? "white" : "",
+          color: document.documentElement.className.includes("dark") ? "white" : "",
           background:
-            document.documentElement.className == "dark" ? "#1f2937" : "",
+            document.documentElement.className.includes("dark") ? "#1f2937" : "",
         }).then((result) => {
           if (result.isConfirmed) {
             router.push("/preferences");
@@ -103,8 +94,8 @@ function OptimizerRuns() {
         cancelButtonText: "Cancel",
         confirmButtonText: "Configure",
         reverseButtons: true,
-        color: document.documentElement.className == "dark" ? "white" : "",
-        background: document.documentElement.className == "dark" ? "#1f2937" : "",
+        color: document.documentElement.className.includes("dark") ? "white" : "",
+        background: document.documentElement.className.includes("dark") ? "#1f2937" : "",
       }).then((result) => {
         if (result.isConfirmed) {
           router.push("/preferences");
@@ -117,24 +108,16 @@ function OptimizerRuns() {
     setDialogVisible(true);
   }, [optimizationSelected]);
 
-  const openResultDialog = (name: string, id: number) => {
-    if (id === optimizationSelected.id) setDialogVisible(true);
-    else setOptimizationSelected({ name, id });
+  const openResultDialog = (row) => {
+    if (row.id === optimizationSelected.id) setDialogVisible(true);
+    else setOptimizationSelected(row);
   };
 
   //Table functions
 
   const reloadOptimizations = () => {
     ipcRenderer
-      .invoke("get-optimizations-list", {
-        mode: controller.mode,
-        address: controller.onlineServer.address
-          ? controller.onlineServer.address
-          : null,
-        auth: controller.onlineServer.auth
-          ? controller.onlineServer.auth
-          : null,
-      })
+      .invoke("get-optimizations-list")
       .then((result) => {
         console.log(result);
         if (result.code === 500) showToast("error", "Error", result.error);
@@ -184,22 +167,13 @@ function OptimizerRuns() {
                 cancelButtonText: "Cancel",
                 confirmButtonText: "Remove optimization",
                 reverseButtons: true,
-                color: document.documentElement.className == "dark" ? "white" : "",
+                color: document.documentElement.className.includes("dark") ? "white" : "",
                 background:
-                  document.documentElement.className == "dark" ? "#1f2937" : "",
+                  document.documentElement.className.includes("dark") ? "#1f2937" : "",
               }).then((result) => {
                 if (result.isConfirmed) {
                   ipcRenderer
-                    .invoke("delete-optimization", {
-                      id: row.id,
-                      mode: controller.mode,
-                      address: controller.onlineServer.address
-                        ? controller.onlineServer.address
-                        : null,
-                      auth: controller.onlineServer.auth
-                        ? controller.onlineServer.auth
-                        : null,
-                    })
+                    .invoke("delete-optimization", {id: row.id})
                     .then((result) => {
                       if (result.code === 500) {
                         showToast("error", "Error", result.error);
@@ -214,15 +188,37 @@ function OptimizerRuns() {
           />
         </div>
       );
+    } else if (row.pid === -2){
+      return (
+        <div className="flex justify-evenly">
+          <Button
+            icon="pi pi-exclamation-triangle"
+            severity="danger"
+            text
+            tooltip="View Error"
+            onClick={() => openResultDialog(row)}
+            tooltipOptions={{ position: "left" }}
+          />
+          <Button
+          icon="pi pi-trash"
+          severity="danger"
+          className="delete-button"
+          tooltip="Delete"
+          text
+          onClick={(e) => confirm(e, row)}
+          tooltipOptions={{ position: "left" }}
+          />
+        </div>
+      );
     }
     return (
-      <div className="flex">
+      <div className="flex justify-evenly">
         <Button
           icon="pi pi-eye"
           severity="info"
           text
           tooltip="Analyze"
-          onClick={() => openResultDialog(row.name, row.id)}
+          onClick={() => openResultDialog(row)}
           tooltipOptions={{ position: "left" }}
         />
         <Button
@@ -259,7 +255,7 @@ function OptimizerRuns() {
             tooltip="Download"
             severity="secondary"
             disabled={row.pid !==0}
-            onClick={() => handleDownload(row.id, "report", row.name)}
+            onClick={() => handleDownload(row.id, "reports", row.name)}
           />
         ) : (
           <i className={"pi pi-times text-red-500"} />
@@ -278,7 +274,7 @@ function OptimizerRuns() {
             tooltip="Download"
             severity="secondary"
             disabled={row.pid !==0}
-            onClick={() => handleDownload(row.id, "trace", row.name)}
+            onClick={() => handleDownload(row.id, "traces", row.name)}
           />
         ) : (
           <i className={"pi pi-times text-red-500"} />
@@ -292,17 +288,18 @@ function OptimizerRuns() {
       .invoke("zip-files", {
         id,
         type,
-        mode: controller.mode,
-        address: controller.onlineServer.address,
-        auth: controller.onlineServer.auth,
-        sim: "optimizations",
+        sim: "optimizer",
         name,
       })
       .then((result) => {
+        
+        console.log(result);
         if (!result || result.code === 500)
           showToast("error", "Error", "Error downloading files");
         else if (result.code === 200)
           showToast("success", "Success", "Files downloaded successfully");
+        else
+          return;
       });
   };
 
@@ -328,6 +325,7 @@ function OptimizerRuns() {
             sortField="id"
             sortOrder={-1}
             size="small"
+            emptyMessage="No Completed Optimizations found"
           >
             <Column field="id" header="ID" sortable></Column>
             <Column field="name" header="Name" sortable></Column>
@@ -372,8 +370,10 @@ function OptimizerRuns() {
       {optimizationSelected.id !== -1 && (
         <DialogResult
           opt={optimizationSelected}
+          setOptimizationSelected={setOptimizationSelected}
           dialogVisible={dialogVisible}
           setDialogVisible={setDialogVisible}
+          deleteOptimization={accept}
         />
       )}
     </div>

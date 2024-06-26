@@ -11,11 +11,15 @@ import { ConfirmPopup, confirmPopup } from "primereact/confirmpopup";
 import { ConfirmDialog, confirmDialog } from "primereact/confirmdialog";
 import { AppController } from "../../hooks/useContext-hooks/appcontroller-hook/appcontroller-hook";
 import { Panel } from "primereact/panel";
+import { Dialog } from "primereact/dialog";
+import Swal from "sweetalert2";
 
 export default function EditServer({ servers, setServers, toast, showToast }) {
   const controller = useContext(AppController);
 
   const [selectedServer, setSelectedServer] = React.useState(null);
+  const [changeUser, setChangeUser] = React.useState(false);
+  const [createUser, setCreateUser] = React.useState(false);
 
   const handleSimulationPreference = (newPreference) => {
     controller.setSimulationPreference(newPreference);
@@ -47,16 +51,37 @@ export default function EditServer({ servers, setServers, toast, showToast }) {
       acceptIcon: "pi pi-trash",
       acceptLabel: "Delete and clear",
       rejectLabel: "Delete but don't clear",
-      accept: () => deleteServer(true),
-      reject: () => deleteServer(false),
+      accept: () => confirm3(),
+      reject: () => deleteServer(false,null),
     });
   };
 
-  const deleteServer = (clearData) => {
+  const confirm3 = () => {
+    Swal.fire({
+      title: "Enter password to delete:",
+      input: "password",
+      inputAttributes: {
+        autocapitalize: "off",
+      },
+      showCancelButton: true,
+      confirmButtonText: "Confirm",
+      confirmButtonColor: "#d33",
+      showLoaderOnConfirm: true,
+      reverseButtons: true,
+    })
+      .then((result) => {
+        if (result.isConfirmed) {
+          deleteServer(true, result.value);
+        }
+      });
+  }
+
+  const deleteServer = (clearData, password) => {
     ipcRenderer
       .invoke("remove-server", {
         server: selectedServer,
         clearData,
+        password: password || null,
       })
       .then((result) => {
         if (result.code == 500) {
@@ -69,7 +94,7 @@ export default function EditServer({ servers, setServers, toast, showToast }) {
           return;
         }
         if (selectedServer === controller.onlineServer.serverName) {
-          controller.setOnlineServer({ serverName: "", address: "", auth: "" });
+          controller.setOnlineServer("");
           handleSimulationPreference("Local");
           showToast(
             "warn",
@@ -77,7 +102,7 @@ export default function EditServer({ servers, setServers, toast, showToast }) {
             "Switched to Local mode as deleted server was in use"
           );
         } else {
-          showToast("success", "Server deleted", "success");
+          showToast("success", "Success", "Server deleted successfully");
         }
 
         setServers((prev) =>
@@ -115,11 +140,7 @@ export default function EditServer({ servers, setServers, toast, showToast }) {
           }
           
           if (selectedServer === controller.onlineServer.serverName) {
-            controller.setOnlineServer({
-              serverName: newServerName,
-              address: newAddress,
-              auth: controller.onlineServer.auth,
-            });
+            controller.setOnlineServer(newServerName);
           }
           setSelectedServer(null);
           setServers((prev) =>
@@ -135,9 +156,44 @@ export default function EditServer({ servers, setServers, toast, showToast }) {
           );
         });
       });
-  
-
   };
+
+  const handleChangeUser = () => {
+    let username = (document.getElementById("edit-username") as HTMLInputElement).value;
+    let password = (document.getElementById("edit-password") as HTMLInputElement).value;
+    let key = (document.getElementById("keyinput") as HTMLInputElement)?.value;
+    ipcRenderer
+      .invoke("change-user", {
+        serverName: selectedServer,
+        username,
+        password,
+        key,
+      })
+      .then((result) => {
+        console.log(result);
+        if (result.code == 500) {
+          Swal.fire({
+            title: "Error",
+            text: result.error ? result.error : "Could not change user",
+            icon: "error",
+            target: document.getElementById("change-user-dialog"),
+            color: document.documentElement.className.includes("dark") ? "white" : "",
+            background: document.documentElement.className.includes("dark") ? "#1f2937" : "",
+          });
+          return;
+        }
+
+        if (result.code == 201)
+          setCreateUser(true);          
+        else {
+          showToast("success", "User changed", "User changed successfully");
+
+          controller.setOnlineServer(selectedServer);
+              
+          setChangeUser(false);
+        }
+      });
+  }
 
   return (
     <Panel header="Edit Server">
@@ -162,6 +218,7 @@ export default function EditServer({ servers, setServers, toast, showToast }) {
                   label="Change user"
                   className=""
                   icon="pi pi-user"
+                  onClick={() => setChangeUser(true)}
                 />
                 <Divider layout="vertical" />
                 <Button
@@ -234,6 +291,39 @@ export default function EditServer({ servers, setServers, toast, showToast }) {
           )}
         </div>
       </div>
+      <Dialog header="Change user" visible={changeUser} style={{ width: "20vw" }} modal
+        onHide={() => { setChangeUser(false); setCreateUser(false); }}
+      >
+        <div className="flex flex-col gap-3" id="change-user-dialog">
+          <h2>Server: {selectedServer}</h2>
+          <InputText placeholder="Username" id="edit-username"/>
+          <span className="p-input-icon-right">
+            <i className="pi pi-eye cursor-pointer" onClick={() => {
+              (document.getElementById("edit-password") as HTMLInputElement).type === "password" ?
+                ((document.getElementById("edit-password") as HTMLInputElement).type = "text") :
+                 ((document.getElementById("edit-password") as HTMLInputElement).type = "password");
+            }} />
+            <InputText id="edit-password" placeholder="Password" type="password" className="w-full"/>
+          </span>
+          {!createUser &&
+            <Button label="Change user" onClick={handleChangeUser} />
+          }
+          {createUser && <>
+            <span>This account does not exist. To create it,
+            please enter the key provided by your administrator:</span>
+          <InputText id="keyinput" placeholder="Enter key..."/>
+          <small>
+            Please enter the key provided by your administrator (Server:{" "}
+            {controller.onlineServer.serverName} )
+            </small>
+            
+            <Button label="Create user" onClick={handleChangeUser} />
+            </>
+            
+          }
+        </div>
+      </Dialog>
+
     </Panel>
   );
 }

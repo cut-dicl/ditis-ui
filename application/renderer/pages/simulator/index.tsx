@@ -27,13 +27,12 @@ interface ISimulatorData {
   selectedTrace: string;
   tracesList: string[];
   name: string;
-  maxEvents: number;
-  maxMemory: number;
+  maxEvents: string;
+  maxMemory: string;
 }
 
 const Simulator = () => {
   const controller = useContext(AppController);
-  const { data, isLoading } = useConfPage();
   const { traces, isLoadingTraces } = useTraces();
   const [areMLFilesEnabled, setAreMLFilesEnabled] = useState(false);
   const [simulatorFormData, setSimulatorFormData] = useState<ISimulatorData>({
@@ -42,24 +41,26 @@ const Simulator = () => {
     selectedTrace: "",
     tracesList: [],
     name: "",
-    maxEvents: null,
-    maxMemory: null,
+    maxEvents: "",
+    maxMemory: "",
   });
   const {
     toast,
     simulations,
+    dialogVisible,
+    simulationSelected,
+    simulationMode,
     terminateSimulation,
     reloadSimulations,
     handleSimulationsTableData,
-    dialogVisible,
     setDialogVisible,
-    simulationSelected,
     openResultDialog,
-    simulationMode,
     clearSimulation,
     deleteSimulation,
   } = useSimulationsTable("Simulator");
+  const { data, isLoading } = useConfPage(undefined, undefined, toast);
   const [error, setError] = useState({ maxevents: "", maxmemory: "" });
+  const [buttonDisabled, setButtonDisabled] = useState(false);
   const router = useRouter();
   const showToast = (severity, summary, detail) => {
     toast.current.show({ severity, summary, detail, life: 3000 });
@@ -89,25 +90,32 @@ const Simulator = () => {
   }, [traces]);
 
   useEffect(() => {
+    reloadSimulations();
     if (controller.javaPath === "" && controller.mode === "Local") {
-      if(controller.appLoaded === true)
-      Swal.fire({
-        title: "Local mode is set without simulator installed",
-        text: "Please configure the simulator in preferences",
-        icon: "warning",
-        showCancelButton: true,
-        cancelButtonText: "Cancel",
-        confirmButtonText: "Configure",
-        reverseButtons: true,
-        color: document.documentElement.className == "dark" ? "white" : "",
-        background:
-          document.documentElement.className == "dark" ? "#1f2937" : "",
-      }).then((result) => {
-        if (result.isConfirmed) {
-          router.push("/preferences");
-        }
-      });
-    } else if(controller.mode === "Online" && controller.onlineServer.address === "") {
+      if (controller.appLoaded === true)
+        Swal.fire({
+          title: "Local mode is set without simulator installed",
+          text: "Please configure the simulator in preferences",
+          icon: "warning",
+          showCancelButton: true,
+          cancelButtonText: "Cancel",
+          confirmButtonText: "Configure",
+          reverseButtons: true,
+          color: document.documentElement.className.includes("dark")
+            ? "white"
+            : "",
+          background: document.documentElement.className.includes("dark")
+            ? "#1f2937"
+            : "",
+        }).then((result) => {
+          if (result.isConfirmed) {
+            router.push("/preferences");
+          }
+        });
+    } else if (
+      controller.mode === "Online" &&
+      controller.onlineServer.address === ""
+    ) {
       Swal.fire({
         title: "Online mode is set without a server selected",
         text: "Please configure the server to use in preferences",
@@ -116,9 +124,12 @@ const Simulator = () => {
         cancelButtonText: "Cancel",
         confirmButtonText: "Configure",
         reverseButtons: true,
-        color: document.documentElement.className == "dark" ? "white" : "",
-        background:
-          document.documentElement.className == "dark" ? "#1f2937" : "",
+        color: document.documentElement.className.includes("dark")
+          ? "white"
+          : "",
+        background: document.documentElement.className.includes("dark")
+          ? "#1f2937"
+          : "",
       }).then((result) => {
         if (result.isConfirmed) {
           router.push("/preferences");
@@ -128,7 +139,6 @@ const Simulator = () => {
   }, []);
 
   const handleSimulatorFormDataChange = (eventChange: any) => {
-    console.log(eventChange.target.value);
     if (
       eventChange.target.name === "selectedTrace" &&
       eventChange.target.value === "Add new"
@@ -140,6 +150,14 @@ const Simulator = () => {
     ) {
       router.push("/configurations");
     }
+    if (
+      eventChange.target.name === "maxEvents" ||
+      eventChange.target.name === "maxMemory"
+    ) {
+      if (!eventChange.target.value.match(/^\d*$/)) setButtonDisabled(true);
+      else setButtonDisabled(false);
+    }
+
     setSimulatorFormData((prevState) => ({
       ...prevState,
       [eventChange.target.name]: eventChange.target.value,
@@ -151,9 +169,10 @@ const Simulator = () => {
       title: "Setting up Simulation...",
       allowOutsideClick: false,
       showConfirmButton: false,
-      color: document.documentElement.className == "dark" ? "white" : "",
-      background:
-        document.documentElement.className == "dark" ? "#1f2937" : "",
+      color: document.documentElement.className.includes("dark") ? "white" : "",
+      background: document.documentElement.className.includes("dark")
+        ? "#1f2937"
+        : "",
       didOpen: () => {
         Swal.showLoading();
       },
@@ -165,23 +184,14 @@ const Simulator = () => {
         areMLFilesEnabled: areMLFilesEnabled,
         name: simulatorFormData.name ? simulatorFormData.name : "",
         maxEvents: simulatorFormData.maxEvents,
-        javaPath: controller.javaPath,
         maxMemory: simulatorFormData.maxMemory,
-        mode: controller.mode,
-        serverAddress: controller.onlineServer.address
-          ? controller.onlineServer.address
-          : null,
-        auth: controller.onlineServer.auth
-          ? controller.onlineServer.auth
-          : null,
       })
       .then((result) => {
-        console.log(result);
         Swal.close();
         if (result.code === 200 || !result) {
           handleSimulationsTableData(result);
         } else if (result.code === 500) {
-          showSwalWithButton("Error", result.error, "error", "OK");
+          showSwalWithButton("Error", result.error.message, "error", "OK");
         }
       });
   };
@@ -192,6 +202,7 @@ const Simulator = () => {
     return (
       <div style={{ textAlign: "center", padding: "25% 0" }}>
         <ProgressSpinner />
+        <Toast ref={toast} />
         <h1>Setting up simulation form...</h1>
       </div>
     );
@@ -254,7 +265,7 @@ const Simulator = () => {
                 <InputText
                   className="w-[25rem] mt-2"
                   name="name"
-                  placeholder="Please enter a name..."
+                  placeholder="Enter a simulation name..."
                   value={simulatorFormData.name}
                   onChange={handleSimulatorFormDataChange}
                 />
@@ -280,12 +291,12 @@ const Simulator = () => {
                     position="top"
                   />
                 </span>
-                <InputNumber
+                <InputText
                   className="mt-2"
                   name="maxEvents"
                   placeholder="Max number of events"
                   value={simulatorFormData.maxEvents}
-                  onValueChange={handleSimulatorFormDataChange}
+                  onChange={handleSimulatorFormDataChange}
                 />
                 <small
                   className={error.maxmemory === "" ? "" : "text-[#dc2626]"}
@@ -309,7 +320,7 @@ const Simulator = () => {
                     position="top"
                   />
                 </span>
-                <InputNumber
+                <InputText
                   className={"mt-2 " + error.maxmemory}
                   placeholder="Max JVM Memory (GB)"
                   name="maxMemory"
@@ -354,7 +365,11 @@ const Simulator = () => {
           <div className="my-5">
             <Button
               id="simulatorButton"
-              disabled={simulatorFormData.selectedConfig.length == 0}
+              disabled={
+                simulatorFormData.selectedConfig.length === 0 ||
+                simulatorFormData.selectedTrace.length === 0 ||
+                buttonDisabled
+              }
               label="Start Simulation"
               onClick={startSimulation}
             ></Button>

@@ -4,6 +4,7 @@ module.exports = {
     "./renderer/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./renderer/UI/**/*.{js,ts,jsx,tsx,mdx}",
     "./renderer/components/**/*.{js,ts,jsx,tsx,mdx}",
+    './node_modules/primereact/**/*.{js,ts,jsx,tsx}',
   ],
   theme: {
   },

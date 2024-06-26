@@ -2,12 +2,23 @@ import { Html, Head, Main, NextScript } from "next/document";
 
 export default function Document() {
   return (
-    <Html>
+    <Html className="h-full">
       <Head>
+        
+      <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              const style = document.createElement('style')
+              style.innerHTML = '@layer tailwind-base, primereact, tailwind-utilities;'
+              style.setAttribute('type', 'text/css')
+              document.querySelector('head').prepend(style)
+            `,
+          }}
+        />
         <link
           id="prime-theme"
           rel="stylesheet"
-          href="themes/bootstrap4-dark-blue/theme.css" // Replace with the actual path to your theme CSS files
+          href="themes/lara-light-blue/theme.css" // Replace with the actual path to your theme CSS files
         />
       </Head>
       <head>
@@ -16,7 +27,7 @@ export default function Document() {
           rel="stylesheet"
         />
       </head>
-      <body>
+      <body className="flex min-h-full flex-col">
         <Main />
         <NextScript />
       </body>

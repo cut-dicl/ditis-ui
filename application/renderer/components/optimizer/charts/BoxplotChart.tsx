@@ -1,21 +1,30 @@
 import React, { useEffect } from 'react'
 import { convertUnderlineToTitleCase } from '../../../utils/convertStringFunctions'
 
-import { Tooltip, Chart, Colors, LinearScale, CategoryScale} from 'chart.js';
+import { Tooltip, Colors, LinearScale, CategoryScale} from 'chart.js';
 import { BoxPlotController, BoxAndWiskers } from '@sgratzl/chartjs-chart-boxplot';
 import { Panel } from 'primereact/panel';
 import { useTheme } from 'next-themes';
+import { Chart } from "chart.js/auto";
 
 
-export default function BoxplotChart({ plotdata, metric, chartSize }) {
+export default function BoxplotChart({ plotdata, metric, chartSize, print }) {
     let chart;
     Chart.register(Colors);
     Chart.register(BoxPlotController, BoxAndWiskers, LinearScale, CategoryScale, Tooltip);
     let theme = useTheme();
+    const [err, setErr] = React.useState(false);
 
     const createChart = () => {
-        const ctx = (document.getElementById(metric) as HTMLCanvasElement).getContext("2d");
+        if (plotdata.labels.length === 0) {
+            setErr(true);
+            return;
+        }
 
+        const canvas = (document.getElementById("Boxplot_"+metric) as HTMLCanvasElement);
+        const ctx = canvas.getContext("2d");
+        //Check if ctx canvas is in use
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         chart = new Chart(ctx, {
             type: 'boxplot',
             data: plotdata,
@@ -33,7 +42,7 @@ export default function BoxplotChart({ plotdata, metric, chartSize }) {
                                 //     return `${parseFloat((val / 1000000).toFixed(1))}M`
                                 // else if (val >= 1000)
                                 //     return `${parseFloat((val / 1000).toFixed(1))}K`
-                                return parseFloat(val.toFixed(1));
+                                return parseFloat(val.toFixed(val % 1 === 0 ? 1 : 4));
                             },
                             color: theme.theme === "dark" ? "lightgrey" : "black"
                         },
@@ -45,9 +54,24 @@ export default function BoxplotChart({ plotdata, metric, chartSize }) {
                         }
                     }
                 },
+                elements: {
+                    boxplot: {
+                        backgroundColor: theme.theme === "dark" ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)",
+                        borderColor: theme.theme === "dark" ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)",
+                    }
+                },
                 plugins: {
                     legend: {
                         display: false,
+                    },
+                    title: {
+                        display: print,
+                        text: convertUnderlineToTitleCase(metric),
+                        color: theme.theme === "dark" ? "white" : "black",
+                        font: {
+                            size: 20,
+                            weight: 'bold'
+                        }
                     },
                     tooltip: {
                         // Disable the on-canvas tooltip
@@ -115,7 +139,7 @@ export default function BoxplotChart({ plotdata, metric, chartSize }) {
                             tooltipEl.style.top = position.top + window.scrollY + tooltipModel.caretY + 'px';
                             tooltipEl.style.padding = "10px";
                             tooltipEl.style.pointerEvents = 'none';
-                            tooltipEl.style.zIndex = "9999";
+                            tooltipEl.style.zIndex = "99998";
                             tooltipEl.style.backgroundColor = "rgba(0, 0, 0, 0.8)";
                             tooltipEl.style.borderRadius = "3px";
                             tooltipEl.style.color = "white";
@@ -127,20 +151,35 @@ export default function BoxplotChart({ plotdata, metric, chartSize }) {
                 
             },
         });
-        chart.resize(0,(plotdata.labels.length*40 > 250?plotdata.labels.length*40 : 250));
+        chart.resize(0,Math.max(plotdata.labels.length * plotdata.labels[0].length * 30, 200));
     };
 
     useEffect(() => {
         createChart();
         return () => {
-            chart.destroy();
+            if (chart)
+                chart.destroy();
         };
     }, [plotdata]);
+
+
+    if (err) {
+        return (
+            <div className="text-center text-danger">No data available</div>
+        )
+    }
+    if (print) {
+        return (
+            <div style={{ width: "100%" }}>
+                <canvas id={"Boxplot_" + metric}></canvas>
+            </div>         
+        )
+    }
 
     return (
         <Panel header={convertUnderlineToTitleCase(metric)} className="text-center" style={{ width: chartSize }}>
             <div>
-                <canvas id={metric}></canvas>
+                <canvas id={"Boxplot_"+metric}></canvas>
             </div>
         </Panel>
     )

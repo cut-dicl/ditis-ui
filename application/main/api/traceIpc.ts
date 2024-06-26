@@ -12,6 +12,7 @@ import {
 } from "../helpers/trace-manager";
 import axios from "axios";
 import { testTrace } from "../service/traces";
+import { getPreference } from "./preferences";
 
 export function traceIpc() {
     ipcMain.handle("open-trace-file", async (event, arg) => {
@@ -29,25 +30,26 @@ export function traceIpc() {
 
     //Insert other ipcMain's here
     ipcMain.handle("store-trace-file", async (event, arg) => {
-        try {
+        try {          
             const name = arg.name;
             let filepath = arg.path;
             filepath = filepath.replace(/\\/g, "/");
             
             let extension = filepath.split(".")[1];
             extension = "." + extension;
+            let mode = getPreference("simulationPreference");
 
-            if (arg.mode === "Online") {
+            if (mode === "Online") {
+                let {address} = getPreference("onlineServer");
                 let file = fs.createReadStream(filepath);
                 const formData = new FormData();
                 formData.append("file", file);
                 
-                let res = await axios.post(arg.address + "/api/trace/upload", formData, {
+                let res = await axios.post(address + "/api/trace/upload", formData, {
                     headers: {
                         'Content-Type': 'multipart/form-data'
                     },
                     params: {
-                        auth: arg.auth,
                         name: arg.name,
                         extension
                     }
@@ -71,7 +73,8 @@ export function traceIpc() {
                 throw new Error("Trace file already exists");
             }
 
-            let type = await testTrace(filepath, arg.javaPath);
+            let javaPath = getPreference("javaPath");
+            let type = await testTrace(filepath, javaPath);
             if (type == "error")
                 throw new Error("Invalid trace file");
             else if (type === "")
@@ -111,6 +114,9 @@ export function traceIpc() {
             return { code: 200, data: null };
         } catch (err) {
             console.log(err);
+            if (err.response) {
+                return { code: 500, error: err.response.data.message };
+            }
             return { code: 500, error: err.message };
         }
     });
@@ -119,8 +125,11 @@ export function traceIpc() {
         try {
             let response = { code: 200, data: null };
             let list;
-            if (arg.mode === "Online") {
-                await axios.post(arg.address + "/api/trace/get", { auth: arg.auth }).then((res) => {
+            let mode = getPreference("simulationPreference");
+
+            if (mode === "Online") {
+                let {address} = getPreference("onlineServer");
+                await axios.post(address + "/api/trace/get").then((res) => {
                     response.data = res.data;
                 }).catch((err) => {
                     console.log(err);
@@ -157,10 +166,11 @@ export function traceIpc() {
         try {
             let trace = arg.trace;
             let response = { code: 200, data: null };
+            let mode = getPreference("simulationPreference");
 
-            if (arg.mode === "Online") {
-                let res = await axios.post(arg.address + "/api/trace/delete", {
-                    auth: arg.auth,
+            if (mode === "Online") {
+                let {address} = getPreference("onlineServer");
+                let res = await axios.post(address + "/api/trace/delete", {
                     trace: trace
                 })
                 if (res.status !== 200) {
@@ -184,11 +194,12 @@ export function traceIpc() {
 
     ipcMain.handle("get-trace-lines", async (event, arg) => {
         try {
-            console.log(arg);
-            if (arg.mode === "Online") {
-                let res = await axios.post(arg.address + "/api/trace/getlines", {
-                    auth: arg.auth,
-                    trace: arg.id
+            let mode = getPreference("simulationPreference");
+            if (mode === "Online") {
+                let {address} = getPreference("onlineServer");
+                let res = await axios.post(address + "/api/trace/getlines", {
+                    id: arg.id,
+                    type: arg.type? arg.type : null
                 }
                 );
                 if (res.status !== 200) {
@@ -203,7 +214,6 @@ export function traceIpc() {
                 const nodepath = require("path");
                 let trace = fs.readdirSync(nodepath.join(app.getPath("userData"), `simulations/${arg.id}`)).find((file) => /output.*\.txt/.test(file));
                 path = app.getPath("userData") + `/simulations/${arg.id}/${trace}`;
-                console.log(path);
             }
             else if (arg.type && arg.type === "optimizer")
                 path = app.getPath("userData") + "/optimizations/" + arg.id + ".txt";
@@ -216,19 +226,20 @@ export function traceIpc() {
             const result = await getNLines(path);
             if (result === "error")
                 throw new Error("Error reading trace file");
-            return { code: 200, data: result };``
+            return { code: 200, data: {report: result, lines: await getLines(path)} };``
         } catch (err) {
-            console.log(err);
-            return { code: 500, error: err.message };
+            return { code: 500, error: err.response? err.response.data.message || "Failed to read trace" : err.message};
         }
     });
 
     ipcMain.handle("analyze-trace", async (event, arg) => {
         try {
-            if (arg.mode === "Online") {
-                let res = await axios.post(arg.address + "/api/trace/analyze", {
-                    auth: arg.auth,
-                    trace: arg.id
+            let mode = getPreference("simulationPreference");
+            if (mode === "Online") {
+                let {address} = getPreference("onlineServer");
+                let res = await axios.post(address + "/api/trace/analyze", {
+                    id: arg.id,
+                    type: arg.type? arg.type : null
                 });
                 if (res.status !== 200) {
                     throw new Error("Failed to analyze trace");
@@ -264,7 +275,7 @@ export function traceIpc() {
                 path = path + ext;
             }
         
-            let data = await traceAnalyzer(path, arg.javaPath);
+            let data = await traceAnalyzer(path);
             if (!data) {
                 throw new Error("Error analyzing trace");
             }
@@ -277,14 +288,26 @@ export function traceIpc() {
 
     ipcMain.handle("download-trace", async (event, arg) => {
         try {
-            if (arg.mode === "Local") {
-                fs.copyFileSync(app.getPath("userData") + "/traces/" + arg.trace + arg.extension, app.getPath("downloads") + `/${arg.trace + arg.extension}`);
+            let mode = getPreference("simulationPreference");
+            if (mode === "Local") {
+                //select location to store
+                let { canceled, filePath } = await dialog.showSaveDialog({
+                    title: "Select location to store trace file",
+                    defaultPath: app.getPath("downloads") + `/${arg.trace + arg.extension}`
+                });
+                
+                if (canceled || !filePath) {
+                    return { code: 418 };
+                }
+
+                fs.copyFileSync(app.getPath("userData") + "/traces/" + arg.trace + arg.extension, filePath);
+                fs.utimesSync(filePath, new Date(), new Date());
                 return { code: 200 };
             }
 
-            let res = await axios.get(arg.address + "/api/trace/download", {
+            let {address} = getPreference("onlineServer");
+            let res = await axios.get(address + "/api/trace/download", {
                 params: {
-                    auth: arg.auth,
                     trace: arg.trace
                 },
                 responseType: 'arraybuffer'
@@ -294,7 +317,13 @@ export function traceIpc() {
                 throw new Error("Failed to download trace");
             }
             const fileData = Buffer.from(res.data, 'binary');
-            fs.writeFileSync(app.getPath("downloads") + `/${arg.trace + arg.extension}`, fileData, { encoding: 'binary' });
+            //select location to store
+            let { filePath } = await dialog.showSaveDialog({
+                title: "Select location to store trace file",
+                defaultPath: app.getPath("downloads") + `/${arg.trace + arg.extension}`
+            });
+
+            fs.writeFileSync(filePath, fileData, { encoding: 'binary' });
             
             return { code: 200 };
         } catch (err) {

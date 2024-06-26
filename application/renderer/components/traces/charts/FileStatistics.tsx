@@ -54,7 +54,8 @@ export default function FileStatistics(props) {
             content={data}
             tableData={workloadReplayTableData}
             pieTitle='Workload Statistics'
-            tableTitle='Workload Metrics'
+        tableTitle='Workload Metrics'
+        printMode={false}
         />
     
     </>)

@@ -3,6 +3,7 @@ import { AppController } from "../../hooks/useContext-hooks/appcontroller-hook/a
 import { useContext, useEffect, useRef, useState } from "react";
 import Swal from "sweetalert2";
 import { ReportContext } from "../useContext-hooks/simulator-report-hook/simulator-report-hook";
+import { useRouter } from "next/navigation";
 
 export type simulationModeType = "Simulator" | "Optimizer";
 
@@ -16,6 +17,7 @@ export const useSimulationsTable = (simulationMode: simulationModeType) => {
     name: "",
     id: -1,
   });
+  const router = useRouter();
 
   const showToast = (severity, summary, detail) => {
     if (toast.current) {
@@ -36,8 +38,10 @@ export const useSimulationsTable = (simulationMode: simulationModeType) => {
       cancelButtonColor: "#3085d6",
       confirmButtonText: "Terminate",
 
-      color: document.documentElement.className == "dark" ? "white" : "",
-      background: document.documentElement.className == "dark" ? "#1f2937" : "",
+      color: document.documentElement.className.includes("dark") ? "white" : "",
+      background: document.documentElement.className.includes("dark")
+        ? "#1f2937"
+        : "",
     }).then((result) => {
       if (result.isConfirmed) {
         Swal.fire({
@@ -46,24 +50,25 @@ export const useSimulationsTable = (simulationMode: simulationModeType) => {
           allowOutsideClick: false,
           allowEscapeKey: false,
 
-          color: document.documentElement.className == "dark" ? "white" : "",
-          background:
-            document.documentElement.className == "dark" ? "#1f2937" : "",
+          color: document.documentElement.className.includes("dark")
+            ? "white"
+            : "",
+          background: document.documentElement.className.includes("dark")
+            ? "#1f2937"
+            : "",
           didOpen: () => {
             Swal.showLoading();
           },
         });
         ipcRenderer
           .invoke("terminate-simulation", {
-            mode: controller.mode,
             simulationMode,
             pid,
             id,
             name: name ?? null,
-            auth: controller.onlineServer.auth,
-            address: controller.onlineServer.address,
           })
           .then((result) => {
+            console.log(result);
             if (result.code === 500) {
               showToast("error", "Error", result.error);
               Swal.close();
@@ -95,11 +100,8 @@ export const useSimulationsTable = (simulationMode: simulationModeType) => {
   const refreshOptimization = (id: number, index) => {
     ipcRenderer
       .invoke("refresh-simulation", {
-        mode: controller.mode,
         id,
         simulationMode,
-        auth: controller.onlineServer.auth,
-        address: controller.onlineServer.address,
       })
       .then((result) => {
         console.log(result);
@@ -120,7 +122,11 @@ export const useSimulationsTable = (simulationMode: simulationModeType) => {
             return prevSimulations;
           const newSimulations = [...prevSimulations];
           newSimulations[index].status =
-            result.data.pid > 0 ? "Running" : "Finished";
+            result.data.pid > 0
+              ? "Running"
+              : result.data.pid === -2
+              ? "Error"
+              : "Finished";
           newSimulations[index].date = result.data.date;
           newSimulations[index].pid =
             result.data.pid === 0 ? "N/A" : result.data.pid;
@@ -136,11 +142,13 @@ export const useSimulationsTable = (simulationMode: simulationModeType) => {
         simulationMode,
       })
       .then((result) => {
+        console.log(result);
         if (result.code == 500 || !result.data) {
           setSimulations([]);
           showToast("error", "Error", "Failed to get running simulations");
+          return;
         }
-        let sim = result.data;
+        let sim = result.data.data;
         if (!sim || sim.length === 0) return setSimulations([]);
         sim.forEach((sim) => {
           if (sim.pid > 0) {
@@ -179,12 +187,41 @@ export const useSimulationsTable = (simulationMode: simulationModeType) => {
         .invoke("fetch-report", {
           id,
           name,
-          auth: controller.onlineServer.auth,
-          address: controller.onlineServer.address,
-          mode: controller.mode,
         })
         .then((result) => {
-          console.log(result);
+          if (result.code === 500) {
+            setSimulationSelected({
+              name: "",
+              id: -1,
+            });
+            Swal.fire({
+              icon: "error",
+              title: "Error",
+              text: result.error,
+              showCancelButton: true,
+              confirmButtonText: "Delete Simulation",
+              confirmButtonColor: "#d33",
+              reverseButtons: true,
+              color: document.documentElement.className.includes("dark")
+                ? "white"
+                : "",
+              background: document.documentElement.className.includes("dark")
+                ? "#1f2937"
+                : "",
+              denyButtonText: "Go to Configurations",
+              showDenyButton: true,
+              denyButtonColor: "#3085d6",
+            }).then((result) => {
+              if (result.isDenied) {
+                router.push("/configurations");
+                return;
+              }
+              if (result.isConfirmed) {
+                deleteSimulation(id, name);
+                return;
+              }
+            });
+          }
           if (result.code === 200) reportCtx.handleReportData(result.data);
         });
     } else if (simulationMode === "Optimizer") {
@@ -197,50 +234,38 @@ export const useSimulationsTable = (simulationMode: simulationModeType) => {
     else setSimulationSelected({ name, id });
   };
 
-  const clearSimulation = (id: number, date?: number) => {
-    let simulation;
-    if (!date) simulation = simulations.filter((item) => item.id !== id);
-    else
-      simulation = simulations.filter(
-        (item) => item.id === id && item.date === date
+  const clearSimulation = (id: number) => {
+    setSimulations((prevSimulations) => {
+      const newSimulations = prevSimulations.filter(
+        (simulation) => simulation.id !== id
       );
-    if (simulation.length === 0) return;
-    setSimulations((prevSimulations) =>
-      prevSimulations.filter((item) => item !== simulation[0])
-    );
+      return newSimulations;
+    });
   };
 
   const deleteSimulation = (id: number, name: string) => {
     if (simulationMode === "Optimizer") {
+      console.log("Deleting optimization");
+      ipcRenderer.invoke("delete-optimization", { id: id }).then((result) => {
+        console.log(result);
+        if (result.code === 500) {
+          showToast("error", "Error", result.error);
+          return;
+        }
+
+        clearSimulation(id);
+        showToast("success", "Success", `${name} deleted succesfully`);
+      });
+    } else {
       ipcRenderer
-        .invoke("delete-optimization", {
-          id: id,
-          mode: controller.mode,
-          address: controller.onlineServer.address
-            ? controller.onlineServer.address
-            : null,
-          auth: controller.onlineServer.auth
-            ? controller.onlineServer.auth
-            : null,
+        .invoke("delete-simulation", {
+          id,
         })
         .then((result) => {
-          if (result.code === 500) {
-            showToast("error", "Error", result.error);
-            return;
-          }
-
+          if (!result || result.code === 500) return;
           clearSimulation(id);
-          showToast(
-            "success",
-            "Success",
-            `${name} Optimization deleted succesfully`
-          );
+          showToast("success", "Success", `${name} deleted succesfully`);
         });
-    } else {
-      ipcRenderer.invoke("delete-simulation", { id, name }).then((result) => {
-        if (!result || result.code === 500) return;
-        clearSimulation(id);
-      });
     }
   };
 
@@ -251,6 +276,7 @@ export const useSimulationsTable = (simulationMode: simulationModeType) => {
     simulationSelected,
     simulationMode,
     setDialogVisible,
+    setSimulationSelected,
     openResultDialog,
     terminateSimulation,
     refreshOptimization,

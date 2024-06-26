@@ -26,17 +26,20 @@ export default function DialogNewTrace({
 }:DialogNewTraceProps) {
   const controller = React.useContext(AppController);
   const [submitted, setSubmitted] = React.useState(false);
+  const [error, setError] = React.useState<string>("");
 
   React.useEffect(() => {
     return () => {
       setSubmitted(false);
+      setError("");
     }
   }, []);
   
   const submitTrace = () => {
     setSubmitted(true);
+    setError("");
     if (!traceName) {
-      showToast('error', 'Error', 'Please enter a name for the trace');
+      setError("Please enter a name for the trace");
       setSubmitted(false);
       return;
     } else if (traceName.toLocaleLowerCase() == "traces") {
@@ -46,20 +49,16 @@ export default function DialogNewTrace({
     }
     ipcRenderer
       .invoke("store-trace-file", {
-        name: traceName, path: path,
-        mode: controller.mode,
-        javaPath: controller.javaPath,
-        address: controller.onlineServer.address ? controller.onlineServer.address : null,
-        auth: controller.onlineServer.auth ? controller.onlineServer.auth : null,})
-      .then((result) => {        
+        name: traceName, path: path
+      }).then((result) => {        
         setSubmitted(false);
-        setDialogVisible(false);
         if (result.code !== 200) {
-          showToast('error', 'Error', result.error ? result.error : 'Failed to import trace');
+          setError(result.error ? result.error : 'Failed to import trace');
           return; 
         }
         setTimeout(reloadTraces, 10);
         showToast('success', 'Trace imported successfully', '');
+        setDialogVisible(false);
       });
   };
 
@@ -70,22 +69,24 @@ export default function DialogNewTrace({
       style={{
         height: "25%",
         minHeight: "250px",
-        width: "20%",
+        width: "25%",
         minWidth: "350px",
       }}
       visible={dialogVisible}
-      onHide={() => setDialogVisible(false)}
+      onHide={() => { setError(""); setDialogVisible(false) }}
     >
       <div className="flex flex-col pt-2 h-full justify-around">
         <span className="p-float-label mt-2">
           <InputText
             id="traceName"
-            className="w-[75%]"
+            className="w-full"
             defaultValue={traceName}
             onChange={(e) => setTraceName(e.target.value)}
+            invalid={error !== ""}
           />
-          <label htmlFor="traceName">Name</label>
+          <label htmlFor="traceName">Enter name</label>
         </span>
+        <small className="text-red-500">{error}</small>
         <div className="flex nowrap justify-between">
           <Button
             label="Cancel"

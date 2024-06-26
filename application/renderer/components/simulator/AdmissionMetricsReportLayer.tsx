@@ -1,12 +1,14 @@
 import { Chart } from "primereact/chart";
 import ReportCard from "../../UI/ReportCard";
 import ReportItemCard from "../../UI/ReportItemCard";
+import React from "react";
 
 const AdmissionPrefetchMetricsReportLayer = ({
   reportContent,
   barLabelsIndexes,
   options,
   keys,
+  printMode,
 }) => {
   const verticalBarsDataHandler = (
     first: number,
@@ -46,6 +48,14 @@ const AdmissionPrefetchMetricsReportLayer = ({
       ],
     };
   };
+  const chartRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if (chartRef.current) {
+      let canvas = chartRef.current.getCanvas();
+      canvas.style.width = "100%";
+    }
+  }, []);
 
   return (
     <ReportCard>
@@ -56,14 +66,18 @@ const AdmissionPrefetchMetricsReportLayer = ({
         );
 
         return (
-          <ReportItemCard key={layerName} width={"30%"}>
+          <ReportItemCard
+            key={layerName}
+            style={{ width: printMode ? "48%" : "30%" }}
+          >
             <h1
-              className="text-l font-bold text-black"
+              className="text-l font-bold text-black dark:text-white"
               style={{ fontFamily: "Montserrat, sans-serif" }}
             >
               {layerName} Layer
             </h1>
             <Chart
+              className="vertical-bar-chart"
               type="bar"
               data={verticalBarsDataHandler(
                 barLabelsIndexes.first,
@@ -72,7 +86,10 @@ const AdmissionPrefetchMetricsReportLayer = ({
                 layerName
               )}
               options={options}
-              style={{minHeight: "350px"}}
+              style={
+                printMode ? { maxHeight: "260px" } : { minHeight: "450px" }
+              }
+              ref={chartRef}
             />
           </ReportItemCard>
         );

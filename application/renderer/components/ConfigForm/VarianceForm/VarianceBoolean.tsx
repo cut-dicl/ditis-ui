@@ -1,11 +1,11 @@
 import { Dropdown } from "primereact/dropdown";
 import { useContext, useEffect, useState } from "react";
-import { VarianceFormContext } from "../../../hooks/useContext-hooks/variance-form-hook/variance-form-hook";
 import { Tooltip } from "primereact/tooltip";
+import { ConfFormContext } from "../../../hooks/useContext-hooks/conf-form-hook/conf-form-hook";
 
 const VarianceBoolean = ({ selected, editValue, readOnly }) => {
   const [varianceBooleanValue, setVarianceBooleanValue] = useState("");
-  const VarFormCtx = useContext(VarianceFormContext);
+  const VarFormCtx = useContext(ConfFormContext);
   const [firstRender, setFirstRender] = useState(true);
 
   const dropdownOptions = ["true", "false"];

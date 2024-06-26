@@ -1,11 +1,10 @@
+import { useContext } from "react";
 import { ReportContext } from "../../hooks/useContext-hooks/simulator-report-hook/simulator-report-hook";
 import { IReportObject } from "../../hooks/useContext-hooks/simulator-report-hook/simulator-report-hook-provider";
-import { useContext } from "react";
-import { Chart } from "primereact/chart";
 import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
 
-const DataProfilerEvaluationMetrics = () => {
+const DataProfilerEvaluationMetrics = (props) => {
   const reportCtx = useContext(ReportContext);
 
   const dataProfilerEvaluationMetricsContent: IReportObject =
@@ -41,13 +40,24 @@ const DataProfilerEvaluationMetrics = () => {
     })
     .filter((item) => item.count !== 0 && item.time !== 0 && item.memory !== 0);
 
-  console.log(showTables);
-
   return (
-    <div>
-      <div className="mb-10">
+    <div className="avoid-page-break">
+      {props.printMode && (
+        <div className="flex justify-center mb-5">
+          <span
+            style={{
+              fontFamily: "Montserrat, sans-serif",
+            }}
+            className="font-bold text-center text-2xl"
+          >
+            Data Profiler
+          </span>
+        </div>
+      )}
+
+      <div className="mb-10 avoid-page-break">
         <h1
-          className="text-l font-bold text-black mb-5"
+          className="text-l font-bold mb-5"
           style={{
             fontFamily: "Montserrat, sans-serif",
           }}
@@ -56,7 +66,7 @@ const DataProfilerEvaluationMetrics = () => {
         </h1>
         {showTables.length === 0 ? (
           <h1
-            className="text-l text-black mb-5"
+            className="text-l mb-5"
             style={{
               fontFamily: "Montserrat, sans-serif",
             }}
@@ -78,7 +88,6 @@ const DataProfilerEvaluationMetrics = () => {
             <Column
               field="label"
               header={dataProfilerOverheadsContent.header[0]}
-              style={{ textAlign: "right" }}
             />
             <Column
               field="count"
@@ -98,9 +107,9 @@ const DataProfilerEvaluationMetrics = () => {
           </DataTable>
         )}
       </div>
-      <div className="mb-10">
+      <div className="mb-10 avoid-page-break">
         <h1
-          className="text-l font-bold text-black mb-5"
+          className="text-l font-bold mb-5"
           style={{
             fontFamily: "Montserrat, sans-serif",
           }}
@@ -109,7 +118,7 @@ const DataProfilerEvaluationMetrics = () => {
         </h1>
         {showTables.length === 0 ? (
           <h1
-            className="text-l text-black mb-5"
+            className="text-l mb-5"
             style={{
               fontFamily: "Montserrat, sans-serif",
             }}

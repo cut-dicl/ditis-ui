@@ -7,10 +7,7 @@ import React, { useContext, useEffect, useRef, useState } from "react";
 
 import { convertDate } from "../../utils/convertStringFunctions";
 import { useConfPage } from "../../hooks/custom-hooks/useConfPage";
-import {
-  configurationContentShown,
-  formTypes,
-} from "../../pages/configurations";
+import {formTypes} from "../../pages/configurations";
 
 import { TabMenu } from "primereact/tabmenu";
 import { FilterMatchMode } from "primereact/api";
@@ -23,6 +20,7 @@ import { AppController } from "../../hooks/useContext-hooks/appcontroller-hook/a
 import { ConfFormContext } from "../../hooks/useContext-hooks/conf-form-hook/conf-form-hook";
 import { Dialog } from "primereact/dialog";
 import { InputTextarea } from "primereact/inputtextarea";
+import { ConfirmPopup, confirmPopup } from "primereact/confirmpopup";
 
 interface IConfigurationPageProps {
   setContent: () => void;
@@ -127,6 +125,20 @@ export const ConfigurationPage = ({
     },
   ];
 
+  const confirm = (event, row) => {
+    confirmPopup({
+        target: event.currentTarget,
+        message: `Do you want to delete configuration ${row.name}?`,
+        icon: 'pi pi-info-circle',
+        acceptClassName: 'p-button-danger',
+        accept: () => accept(row)
+    });
+};
+
+const accept = (row) => {
+  deleteConfigHandler(row);
+};
+
   useEffect(() => {
     if (controller.javaPath === "" && controller.mode === "Local") {
       if (controller.appLoaded === true)
@@ -139,9 +151,9 @@ export const ConfigurationPage = ({
           confirmButtonText: "Configure",
           reverseButtons: true,
 
-          color: document.documentElement.className == "dark" ? "white" : "",
+          color: document.documentElement.className.includes("dark") ? "white" : "",
           background:
-            document.documentElement.className == "dark" ? "#1f2937" : "",
+            document.documentElement.className.includes("dark") ? "#1f2937" : "",
         }).then((result) => {
           if (result.isConfirmed) {
             router.push("/preferences");
@@ -160,9 +172,9 @@ export const ConfigurationPage = ({
         confirmButtonText: "Configure",
         reverseButtons: true,
 
-        color: document.documentElement.className == "dark" ? "white" : "",
+        color: document.documentElement.className.includes("dark") ? "white" : "",
         background:
-          document.documentElement.className == "dark" ? "#1f2937" : "",
+          document.documentElement.className.includes("dark") ? "#1f2937" : "",
       }).then((result) => {
         if (result.isConfirmed) {
           router.push("/preferences");
@@ -214,7 +226,7 @@ export const ConfigurationPage = ({
           severity="danger"
           className="delete-button"
           text
-          onClick={() => deleteConfigHandler(rowData)}
+          onClick={e => confirm(e,rowData)}
         />
       </div>
     );
@@ -254,6 +266,21 @@ export const ConfigurationPage = ({
   if (isLoading) {
     return (
       <>
+        <div className="flex nowrap justify-between mt-5 mb-5">
+          <h1 className="text-3xl font-bold">Configurations</h1>
+          <Menu
+            model={createMenuItems}
+            popup
+            ref={createMenu}
+            id="create_menu"
+          />
+          <Menu
+            model={uploadMenuItems}
+            popup
+            ref={uploadMenu}
+            id="upload_menu"
+          />
+        </div>
         <div className="flex justify-between">
           <TabMenu
             model={configurationTabMenuItems}
@@ -262,16 +289,52 @@ export const ConfigurationPage = ({
           />
           <div>
             <div className="inline-flex space-x-4 mr-5 mb-2">
-              <Button
-                label="Create"
-                icon="pi pi-plus"
-                onClick={(event) => createMenu.current.toggle(event)}
-              />
-              <Button
-                label="Upload"
-                icon="pi pi-plus"
-                onClick={(event) => uploadMenu.current.toggle(event)}
-              />
+              <Tooltip target=".create-config" position="top" />
+              <span className="create-config">
+                <Button
+                  label="Create"
+                  icon="pi pi-plus"
+                  onClick={(event) => createMenu.current.toggle(event)}
+                  disabled={
+                    (controller.mode === "Local" &&
+                      controller.javaPath === "") ||
+                    (controller.mode === "Online" &&
+                      controller.onlineServer.address === "")
+                  }
+                  tooltip={
+                    controller.mode === "Local" && controller.javaPath === ""
+                      ? "Please configure the simulator in preferences"
+                      : controller.mode === "Online" &&
+                        controller.onlineServer.address === ""
+                      ? "Please configure the server to use in preferences"
+                      : "Create Configuration"
+                  }
+                  tooltipOptions={{ showOnDisabled: true }}
+                />
+              </span>
+              <Tooltip target=".upload-config" position="top" />
+              <span className="upload-config">
+                <Button
+                  label="Upload"
+                  icon="pi pi-plus"
+                  onClick={(event) => uploadMenu.current.toggle(event)}
+                  disabled={
+                    (controller.mode === "Local" &&
+                      controller.javaPath === "") ||
+                    (controller.mode === "Online" &&
+                      controller.onlineServer.address === "")
+                  }
+                  tooltip={
+                    controller.mode === "Local" && controller.javaPath === ""
+                      ? "Please configure the simulator in preferences"
+                      : controller.mode === "Online" &&
+                        controller.onlineServer.address === ""
+                      ? "Please configure the server to use in preferences"
+                      : "Upload Configuration"
+                  }
+                  tooltipOptions={{ showOnDisabled: true }}
+                />
+              </span>
             </div>
             <span className="p-input-icon-right">
               <i className="pi pi-search" />
@@ -283,6 +346,7 @@ export const ConfigurationPage = ({
             </span>
           </div>
         </div>
+        <Toast ref={toast} />
         <DataTable value={[]} showGridlines size="small">
           <Column
             field="name"
@@ -331,7 +395,7 @@ export const ConfigurationPage = ({
   return (
     <>
       <div className="flex nowrap justify-between mt-5 mb-5">
-        <h1 className="text-3xl font-bold">Configuration</h1>
+        <h1 className="text-3xl font-bold">Configurations</h1>
         <Menu model={createMenuItems} popup ref={createMenu} id="create_menu" />
         <Menu model={uploadMenuItems} popup ref={uploadMenu} id="upload_menu" />
       </div>
@@ -346,16 +410,52 @@ export const ConfigurationPage = ({
             />
             <div>
               <div className="inline-flex space-x-4 mr-5 mb-2">
-                <Button
-                  label="Create"
-                  icon="pi pi-plus"
-                  onClick={(event) => createMenu.current.toggle(event)}
-                />
-                <Button
-                  label="Upload"
-                  icon="pi pi-plus"
-                  onClick={(event) => uploadMenu.current.toggle(event)}
-                />
+                <Tooltip target=".create-config" position="top" />
+                <span className="create-config">
+                  <Button
+                    label="Create"
+                    icon="pi pi-plus"
+                    onClick={(event) => createMenu.current.toggle(event)}
+                    disabled={
+                      (controller.mode === "Local" &&
+                        controller.javaPath === "") ||
+                      (controller.mode === "Online" &&
+                        controller.onlineServer.address === "")
+                    }
+                    tooltip={
+                      controller.mode === "Local" && controller.javaPath === ""
+                        ? "Please configure the simulator in preferences"
+                        : controller.mode === "Online" &&
+                          controller.onlineServer.address === ""
+                        ? "Please configure the server to use in preferences"
+                        : "Create Configuration"
+                    }
+                    tooltipOptions={{ showOnDisabled: true }}
+                  />
+                </span>
+                <Tooltip target=".upload-config" position="top" />
+                <span className="upload-config">
+                  <Button
+                    label="Upload"
+                    icon="pi pi-plus"
+                    onClick={(event) => uploadMenu.current.toggle(event)}
+                    disabled={
+                      (controller.mode === "Local" &&
+                        controller.javaPath === "") ||
+                      (controller.mode === "Online" &&
+                        controller.onlineServer.address === "")
+                    }
+                    tooltip={
+                      controller.mode === "Local" && controller.javaPath === ""
+                        ? "Please configure the simulator in preferences"
+                        : controller.mode === "Online" &&
+                          controller.onlineServer.address === ""
+                        ? "Please configure the server to use in preferences"
+                        : "Upload Configuration"
+                    }
+                    tooltipOptions={{ showOnDisabled: true }}
+                  />
+                </span>
               </div>
               <span className="p-input-icon-right">
                 <i className="pi pi-search" />
@@ -432,6 +532,7 @@ export const ConfigurationPage = ({
           </DataTable>
         </div>
         <Toast ref={toast} />
+        <ConfirmPopup />  
         <Dialog
           onHide={() => setShowDialog(false)}
           visible={showDialog}

@@ -8,9 +8,9 @@ import { MultiSelect } from "primereact/multiselect";
 import TableView from "./charts/TableView";
 import { ChartView } from "./charts/ChartView";
 import { BoxplotView } from "./charts/BoxplotView";
-import { Button } from "primereact/button";
 import { useRef } from "react";
-import { useReactToPrint } from "react-to-print";
+import { Checkbox } from "primereact/checkbox";
+import { InputSwitch } from "primereact/inputswitch";
 
 export default function ResultsDetailed({
   data,
@@ -26,9 +26,7 @@ export default function ResultsDetailed({
 }) {
 
   const componentRef = useRef();
-  const handlePrint = useReactToPrint({
-    content: () => componentRef.current,
-  });
+  const [showPoints, setShowPoints] = React.useState(false);
 
 
 
@@ -106,9 +104,9 @@ export default function ResultsDetailed({
     else if (option.value === "boxplot") icon = "pi pi-box";
 
     return (
-      <div className="flex flex-row">
+      <div className="flex flex-row items-center">
         <i className={icon + " mr-2"}></i>
-        <span className="text-sm font-bold">{option.label}</span>
+        <span className="font-bold">{option.label}</span>
       </div>
     );
   };
@@ -142,24 +140,31 @@ export default function ResultsDetailed({
             <label htmlFor="ms-metrics">Select metrics</label>
           </span>
         </div>
-        <div className="flex flex-row">
-        <span className="p-float-label mt-5">
-          <Dropdown
-            options={[
-              { label: "Small", value: "20%" },
-              { label: "Medium", value: "30%" },
-              { label: "Large", value: "45%" },
-              { label: "Extra Large", value: "95%" },
-            ]}
-            optionLabel="label"
-            placeholder="Select size"
-            onChange={(e) => setChartSize(e.value)}
-            value={chartSize}
-          />
-          <label htmlFor="ms-view">Select chart size</label>
-        </span>
+        <div className="flex flex-row gap-5">
+          {chartMode === "boxplot" && <div className="flex items-center mt-5">
+            <InputSwitch inputId="show-points" onChange={(e) => setShowPoints(e.value)} checked={showPoints} />
+            <label htmlFor="show-Points" className="ml-2">Show Points</label>
+          </div>            
+            }
+          {chartMode !== "table" &&
+            <span className="p-float-label mt-5">
+              <Dropdown
+                options={[
+                  { label: "Small", value: "20%" },
+                  { label: "Medium", value: "30%" },
+                  { label: "Large", value: "45%" },
+                  { label: "Extra Large", value: "95%" },
+                ]}
+                optionLabel="label"
+                placeholder="Select size"
+                onChange={(e) => setChartSize(e.value)}
+                value={chartSize}
+              />
+              <label htmlFor="ms-view">Select chart size</label>
+            </span>
+          }
         {/* <Button label="Print" icon="pi pi-print" className="p-button-rounded p-button-success p-mr-2" onClick={handlePrint} /> */}
-        <span className="p-float-label mt-5 ml-5">
+        <span className="p-float-label mt-5">
           <Dropdown
             options={[
               { label: "Table", value: "table" },
@@ -181,7 +186,7 @@ export default function ResultsDetailed({
       <div className="flex flex-col" ref={componentRef}>
         {chartMode === "table" && selectedColumn.length>0 && <TableView selectedMetrics={selectedMetrics} results={generateResults()}/>}
         {chartMode === "chart" && selectedColumn.length > 0 && <ChartView selectedMetrics={selectedMetrics} results={generateResults()} chartSize={chartSize}/>}
-        {chartMode === "boxplot" && selectedColumn.length>0 && <BoxplotView selectedMetrics={selectedMetrics} selectedColumn={selectedColumn} groupBy={groupBy} chartSize={chartSize}/>}
+        {chartMode === "boxplot" && selectedColumn.length > 0 && <BoxplotView selectedMetrics={selectedMetrics} plotdata={groupBy(selectedColumn)} chartSize={chartSize} points={showPoints} />}
       </div>
     </div>
   );

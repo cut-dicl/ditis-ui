@@ -6,11 +6,23 @@ import React from "react";
 import { AppController } from "../../hooks/useContext-hooks/appcontroller-hook/appcontroller-hook";
 import { ipcRenderer } from "electron";
 
-export default function SimulatorPreference(servers, showToast) {
+export default function SimulatorPreference({servers, showToast}) {
+  console.log(servers);
   const controller = React.useContext(AppController);
-  const [onlineServer, setOnlineServer] = React.useState(
-    controller.onlineServer
-  );
+
+  const handleOnlineServer = (e) => {
+    ipcRenderer.invoke("check-user", {serverName:e.target.value}).then((result) => {
+
+      console.log(result);
+      if (result === undefined) return;
+      if (result.code == 500) {
+        showToast("error", "Error", result.error);
+        return;
+      }
+      controller.setOnlineServer(e.target.value);
+    });
+  }
+
 
   const handleSimulationPreference = (newPreference) => {
     controller.setSimulationPreference(newPreference);
@@ -21,26 +33,6 @@ export default function SimulatorPreference(servers, showToast) {
     controller.setMode(newPreference);
   };
 
-  const handleIsSimulatorInstalled = (newPreference) => {
-    controller.setIsSimulatorInstalled(newPreference);
-    handleSimulationPreference("Online");
-    //ipcRenderer.invoke('edit-preferences-file', { key: "isSimulatorInstalled", value: newPreference })
-  };
-
-  const handleOnlineServer = (newServer) => {
-    ipcRenderer
-      .invoke("get-server", { serverName: newServer })
-      .then((result) => {
-        if (result === undefined) return;
-        if (result.code == 500) {
-          showToast("Error", "Failed to get servers", "error", "Ok");
-          return;
-        }
-
-        setOnlineServer(result.data);
-        controller.setOnlineServer(result.data);
-      });
-  };
 
   const dropdownServerTemplate = (option) => {
     return (
@@ -147,11 +139,12 @@ export default function SimulatorPreference(servers, showToast) {
             <span>Select server to use:</span>
             <Dropdown
               placeholder="Select server"
-              options={servers.servers}
-              onChange={(e) => handleOnlineServer(e.target.value)}
-              value={onlineServer.serverName ? onlineServer.serverName : null}
+              options={servers}
+              onChange={handleOnlineServer}
+              value={controller.onlineServer.serverName}
               itemTemplate={dropdownServerTemplate}
               valueTemplate={dropdownServerValueTemplate}
+              className={(controller.onlineServer.address.length>0?"":"p-invalid")}
             />
             <small className="flex flex-col">
               <span>Server Status:</span>

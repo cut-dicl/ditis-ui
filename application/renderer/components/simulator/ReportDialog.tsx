@@ -20,20 +20,22 @@ import ModulesReport from "./ModulesReport";
 import ReactToPrint, { useReactToPrint } from "react-to-print";
 import { Button } from "primereact/button";
 import ExportReport from "./ExportReport";
+import ResultsPrint from "../optimizer/ResultsPrint";
 
 interface IReportDialog {
   showReportDialog: boolean;
   setShowReportDialog: (value: React.SetStateAction<boolean>) => void;
   dialogMode: boolean;
+  simInfo: number;
 }
 
 const ReportDialog = ({
   showReportDialog,
   setShowReportDialog,
   dialogMode,
+  simInfo,
 }) => {
   const reportCtx = useContext(ReportContext);
-  const reportRef = useRef(null);
   const [printMode, setPrintMode] = useState(false);
 
   const nameToComponentAssociation = {
@@ -56,21 +58,29 @@ const ReportDialog = ({
     "Modules - PersistenceLayer": ModulesReport,
   };
 
-  const handlePrint = useReactToPrint({
-    content: () => reportRef.current,
-  });
+  const handlePrintMode = () => {
+    setPrintMode((prev) => !prev);
+  };
 
   const dialogHeaderContent = () => (
     <div>
-      <Dropdown
-        className="w-[20rem]"
-        value={reportCtx.reportShown}
-        placeholder="Select Report..."
-        options={Object.keys(reportCtx.reportData).sort()}
-        onChange={handleReportType}
-        scrollHeight="350px"
-      />
-      {/* <Button label="Success" severity="success" onClick={handlePrint} /> */}
+      <h2>Simulation {simInfo.id}</h2>
+      <div className={`flex ${printMode ? "justify-end" : "justify-between"}`}>
+        {!printMode && (
+          <Dropdown
+            className="w-[20rem]"
+            value={reportCtx.reportShown}
+            placeholder="Select Report..."
+            options={Object.keys(reportCtx.reportData).sort()}
+            onChange={handleReportType}
+            scrollHeight="350px"
+          />
+        )}
+        <Button
+          label={printMode ? "View reports" : "Go to print"}
+          onClick={handlePrintMode}
+        />
+      </div>
     </div>
   );
 
@@ -78,7 +88,11 @@ const ReportDialog = ({
     reportCtx.handleReportShown(e.target.value);
   };
 
-  if (Object.entries(reportCtx.reportData).length === 0) {
+  if (
+    reportCtx.reportData === undefined ||
+    null ||
+    Object.entries(reportCtx.reportData).length === 0
+  ) {
     return (
       <div>
         {!dialogMode && <p>Something went wrong. No reports were generated</p>}
@@ -95,34 +109,53 @@ const ReportDialog = ({
     );
   }
 
+  const resetShownReport = () => {
+    setShowReportDialog(false);
+    setTimeout(() => {
+      setPrintMode(false);
+      reportCtx.handleReportShown("Workload Replay");
+    }, 500);
+  };
+
   return (
     <div>
-      {!dialogMode && !printMode && (
-        <div>
-          <Dropdown
-            className="w-[20rem] mb-10"
-            value={reportCtx.reportShown}
-            placeholder="Select Report..."
-            options={Object.keys(reportCtx.reportData).sort()}
-            onChange={handleReportType}
-          />
-          {React.createElement(
-            nameToComponentAssociation[reportCtx.reportShown]
-          )}
-        </div>
-      )}
-      {dialogMode && !printMode && (
-        <Dialog
-          onHide={() => setShowReportDialog(false)}
-          visible={showReportDialog}
-          style={{ width: "92.5%", height: "90%" }}
-          header={dialogHeaderContent}
-        >
-          {React.createElement(
-            nameToComponentAssociation[reportCtx.reportShown]
-          )}
-        </Dialog>
-      )}
+      <div>
+        {!dialogMode && (
+          <div>
+            <Dropdown
+              className="w-[20rem] mb-10"
+              value={reportCtx.reportShown}
+              placeholder="Select Report..."
+              options={Object.keys(reportCtx.reportData).sort()}
+              onChange={handleReportType}
+            />
+            {React.createElement(
+              nameToComponentAssociation[reportCtx.reportShown]
+            )}
+          </div>
+        )}
+        {dialogMode && (
+          <Dialog
+            onHide={resetShownReport}
+            visible={showReportDialog}
+            style={{ width: "92.5%", height: "90%" }}
+            header={dialogHeaderContent}
+            draggable={false}
+          >
+            {!printMode &&
+              React.createElement(
+                nameToComponentAssociation[reportCtx.reportShown],
+                { printMode: false }
+              )}
+            {printMode && (
+              <ExportReport
+                simInfo={simInfo}
+                options={nameToComponentAssociation}
+              />
+            )}
+          </Dialog>
+        )}
+      </div>
     </div>
   );
 };

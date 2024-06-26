@@ -6,7 +6,7 @@ import BlockSplitOperationsBytesTime from "./BlockSplitOperationsBytesTime";
 import BorderHeader from "../../UI/BorderHeader";
 import { Panel } from "primereact/panel";
 
-const InitialTierStateReport = () => {
+const InitialTierStateReport = (props) => {
   const reportCtx = useContext(ReportContext);
 
   const initialTierStateReportContent: IReportObject =
@@ -15,21 +15,58 @@ const InitialTierStateReport = () => {
   const initialTierStateCharts = ["HOT", "WARM", "COLD"];
 
   return (
-    <div>
+    <div className="avoid-page-break">
+      {props.printMode && (
+        <div className="flex justify-center mb-10">
+          <span
+            style={{
+              fontFamily: "Montserrat, sans-serif",
+            }}
+            className="font-bold text-center text-2xl"
+          >
+            Initial Tier State
+          </span>
+        </div>
+      )}
       {initialTierStateCharts.map((item, index) => {
         return (
-          <div key={item} className="mb-20">
-            <Panel
-              header={`${item} Tier`}
-              style={{
-                fontFamily: "Montserrat, sans-serif",
-              }}
-            >
-              <BlockSplitOperationsBytesTime
-                blockSelection={index}
-                reportContent={initialTierStateReportContent}
-              />
-            </Panel>
+          <div key={item} className="mb-20 avoid-page-break">
+            {!props.printMode && (
+              <Panel
+                header={`${item} Tier`}
+                style={{
+                  fontFamily: "Montserrat, sans-serif",
+                }}
+              >
+                <BlockSplitOperationsBytesTime
+                  blockSelection={index}
+                  reportContent={initialTierStateReportContent}
+                  printMode={props.printMode}
+                />
+              </Panel>
+            )}
+            {props.printMode && (
+              <>
+                <div className="avoid-page-break">
+                  <div className="flex justify-center mb-5">
+                    <span
+                      style={{
+                        fontFamily: "Montserrat, sans-serif",
+                      }}
+                      className="font-bold text-center text-xl"
+                    >
+                      {item} Tier
+                    </span>
+                  </div>
+                  <BlockSplitOperationsBytesTime
+                    blockSelection={index}
+                    reportContent={initialTierStateReportContent}
+                    printMode={props.printMode}
+                  />
+                </div>
+                <div className="page-break"></div>
+              </>
+            )}
           </div>
         );
       })}

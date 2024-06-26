@@ -1,6 +1,3 @@
-*.sh
-*.txt
-*.csv
 .vscode
 .idea
 target
@@ -13,5 +10,3 @@ application/package-lock.json
 application/app
 application/renderer/.next
 application/build
-server/package-lock.json
-server/node_modules

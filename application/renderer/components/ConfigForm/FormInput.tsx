@@ -5,7 +5,6 @@ import { Dropdown } from "primereact/dropdown";
 import { Content } from "next/dist/compiled/@next/font/dist/google";
 
 import { ConfFormContext } from "../../hooks/useContext-hooks/conf-form-hook/conf-form-hook";
-import { NextPreviousButtonContext } from "../../hooks/useContext-hooks/next-previous-buttons-hook/next-previous-buttons-hook";
 import { convertToLabel } from "../../utils/convertStringFunctions";
 
 export interface Content {
@@ -25,12 +24,11 @@ interface IFormInput {
 
 export const FormInput = ({ readOnly }: IFormInput) => {
   const confFormCtx = useContext(ConfFormContext);
-  const nextPrevBtnCtx = useContext(NextPreviousButtonContext);
   const stepData: stepDataType = Object.entries(
     confFormCtx.configurationObject
-  )[nextPrevBtnCtx.activeIndex];
+  )[confFormCtx.activeIndex];
 
-  console.log(stepData);
+  console.log(stepData[1]);
 
   const handleInput = (event) => {
     const inputObject = {
@@ -41,13 +39,13 @@ export const FormInput = ({ readOnly }: IFormInput) => {
     confFormCtx.handleConfigurationObject(inputObject);
   };
 
-  console.log(readOnly);
-
   return (
     <>
       <h1 className="text-2xl mt-5">{stepData[0]}</h1>
       <div className="grid gap-4 grid-cols-2">
         {stepData[1].map((item) => {
+          console.log(item.defaultValue);
+
           return (
             <div className="flex flex-col mt-5 space-y-2" key={item.key}>
               <Tooltip target=".pi-question-circle" />

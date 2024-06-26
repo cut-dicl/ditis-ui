@@ -1,7 +1,7 @@
 import { MultiSelect } from "primereact/multiselect";
 import { useContext, useEffect, useState } from "react";
-import { VarianceFormContext } from "../../../hooks/useContext-hooks/variance-form-hook/variance-form-hook";
 import { Tooltip } from "primereact/tooltip";
+import { ConfFormContext } from "../../../hooks/useContext-hooks/conf-form-hook/conf-form-hook";
 
 interface IVarianceClassOption {
   selected: any;
@@ -19,7 +19,7 @@ export const VarianceClassOption = ({
   readOnly,
 }: IVarianceClassOption) => {
   const [varianceClassOptions, setVarianceClassOptions] = useState([]);
-  const VarFormCtx = useContext(VarianceFormContext);
+  const VarFormCtx = useContext(ConfFormContext);
 
   const handleClasses = (e): void => {
     setVarianceClassOptions(e.target.value);

@@ -3,13 +3,11 @@ import { useEffect, useRef, useState } from "react";
 import ConfigurationForm from "../../components/ConfigForm/ConfigurationForm";
 import { ConfFormContextProvider } from "../../hooks/useContext-hooks/conf-form-hook/conf-form-hook-provider";
 import { ConfigurationPage } from "../../components/ConfigForm/ConfigurationPage";
-import { NextPreviousButtonContextProvider } from "../../hooks/useContext-hooks/next-previous-buttons-hook/next-previous-buttons-hook-provider";
 import {
   ConfigurationMode,
   useConfFormProps,
 } from "../../hooks/custom-hooks/useConfForm";
 import { VarianceForm } from "../../components/ConfigForm/VarianceForm/VarianceForm";
-import { VarianceFormProvider } from "../../hooks/useContext-hooks/variance-form-hook/variance-form-hook-provider";
 import Head from "next/head";
 
 export interface IConfSettings extends useConfFormProps {
@@ -87,37 +85,33 @@ const Configurations = () => {
 
   return (
     <ConfFormContextProvider>
-      <NextPreviousButtonContextProvider>
-        <div className="w-full p-5 h-full">
-          <Head>
-            <title>DITIS Simulator: Configurations</title>
-          </Head>
-          {contentShown === "none" && (
-            <>
-              <ConfigurationPage
-                setContent={setVarianceCreateForm}
-                showForm={setCreateForm}
-                setEditMode={setEditMode}
-                setVarianceEditMode={setVarianceEditMode}
-              />
-            </>
-          )}
-          {contentShown === "form" && (
-            <ConfigurationForm
-              confSettings={confSettings}
-              showForm={setContentShown}
+      <div className="w-full p-5 h-full">
+        <Head>
+          <title>DITIS Simulator: Configurations</title>
+        </Head>
+        {contentShown === "none" && (
+          <>
+            <ConfigurationPage
+              setContent={setVarianceCreateForm}
+              showForm={setCreateForm}
+              setEditMode={setEditMode}
+              setVarianceEditMode={setVarianceEditMode}
             />
-          )}
-          {contentShown === "variance" && (
-            <VarianceFormProvider>
-              <VarianceForm
-                showForm={setContentShown}
-                varianceSettings={varianceSettings}
-              />
-            </VarianceFormProvider>
-          )}
-        </div>
-      </NextPreviousButtonContextProvider>
+          </>
+        )}
+        {contentShown === "form" && (
+          <ConfigurationForm
+            confSettings={confSettings}
+            showForm={setContentShown}
+          />
+        )}
+        {contentShown === "variance" && (
+          <VarianceForm
+            showForm={setContentShown}
+            varianceSettings={varianceSettings}
+          />
+        )}
+      </div>
     </ConfFormContextProvider>
   );
 };

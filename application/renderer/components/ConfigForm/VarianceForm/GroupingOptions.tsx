@@ -6,10 +6,10 @@ import {
   useRef,
   useState,
 } from "react";
-import { VarianceFormContext } from "../../../hooks/useContext-hooks/variance-form-hook/variance-form-hook";
 import { Tooltip } from "primereact/tooltip";
 import { Dropdown } from "primereact/dropdown";
 import { Button } from "primereact/button";
+import { ConfFormContext } from "../../../hooks/useContext-hooks/conf-form-hook/conf-form-hook";
 
 interface IGroupingOptions {
   id: number;
@@ -19,7 +19,7 @@ interface IGroupingOptions {
 
 export const GroupingOptions = ({ id, remove, varianceSettings }) => {
   const [selectedGroupingOptions, setSelectedGroupingOptions] = useState([]);
-  const VarFormCtx = useContext(VarianceFormContext);
+  const VarFormCtx = useContext(ConfFormContext);
 
   const handleGrouping = (e: MultiSelectChangeEvent) => {
     VarFormCtx.handleGroupingOptionsChange(

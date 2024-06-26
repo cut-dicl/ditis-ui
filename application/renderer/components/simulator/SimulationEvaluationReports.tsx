@@ -6,7 +6,7 @@ import { Column } from "primereact/column";
 import { ColumnGroup } from "primereact/columngroup";
 import { Row } from "primereact/row";
 
-const SimulationEvaluationReports = () => {
+const SimulationEvaluationReports = (props) => {
   const reportCtx = useContext(ReportContext);
 
   const simulationEvaluationContent: IReportObject =
@@ -26,8 +26,6 @@ const SimulationEvaluationReports = () => {
       return rowData;
     }
   );
-
-  console.log(tableData);
 
   const headerGroup = (
     <ColumnGroup>
@@ -87,7 +85,19 @@ const SimulationEvaluationReports = () => {
   };
 
   return (
-    <div>
+    <div className="avoid-page-break">
+      {props.printMode && (
+        <div className="flex justify-center mb-5">
+          <span
+            style={{
+              fontFamily: "Montserrat, sans-serif",
+            }}
+            className="font-bold text-center text-2xl"
+          >
+            Simulation Evaluation
+          </span>
+        </div>
+      )}
       <DataTable
         value={tableData}
         showGridlines

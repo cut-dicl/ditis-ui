@@ -8,7 +8,7 @@ import { Divider } from "primereact/divider";
 import StorageNodesPieCharts from "./StorageNodesPieCharts";
 import { convertUnderlineToTitleCase } from "../../utils/convertStringFunctions";
 
-const StorageNodesReport = () => {
+const StorageNodesReport = (props) => {
   const reportCtx = useContext(ReportContext);
 
   const storageNodeContent: { [key: string]: IReportObject } =
@@ -80,76 +80,167 @@ const StorageNodesReport = () => {
   };
 
   return (
-    <>
+    <div className="avoid-page-break">
+      {props.printMode && (
+        <div className="flex justify-center mb-5">
+          <span
+            style={{
+              fontFamily: "Montserrat, sans-serif",
+            }}
+            className="font-bold text-center text-2xl"
+          >
+            Storage Nodes
+          </span>
+        </div>
+      )}
       {Object.entries(storageNodeContent).map((item, index) => {
         return (
-          <Panel header={`${item[0]}`} style={{ marginBottom: "30px" }}>
-            <StorageNodesPieCharts
-              blockSelection={index}
-              reportContent={item[1]}
-            />
-            <div className="flex justify-center my-5">
-              <Divider className="h-[1px] bg-gray-400 w-3/4" />
-            </div>
-            <DataTable
-              value={tableData(item[1])}
-              showGridlines
-              tableStyle={{
-                width: "100%",
-                boxShadow: "0 4px 10px rgba(0, 0, 0, 0.2)",
-                fontFamily: "Montserrat, sans-serif",
-              }}
-              emptyMessage={`No data to display for ${item[0]}`}
-              size="small"
-            >
-              <Column
-                header=""
-                field="label"
-                body={(rowData) => {
-                  return convertUnderlineToTitleCase(rowData.label);
-                }}
-              />
-              <Column
-                header="Count"
-                field="count"
-                style={{ textAlign: "right" }}
-                body={formatNumber}
-              />
-              <Column
-                header="Total Bytes"
-                field="totalBytes"
-                style={{ textAlign: "right" }}
-                body={formatNumber}
-              />
-              <Column
-                header="Total Time (ms)"
-                field="totalTime"
-                style={{ textAlign: "right" }}
-                body={formatNumber}
-              />
-              <Column
-                header="Latency (ms)"
-                field="latency"
-                style={{ textAlign: "right" }}
-                body={formatNumber}
-              />
-              <Column
-                header="IOPS"
-                field="iops"
-                style={{ textAlign: "right" }}
-                body={formatNumber}
-              />
-              <Column
-                header="Throughput(MB/s)"
-                field="throughput"
-                style={{ textAlign: "right" }}
-                body={formatNumber}
-              />
-            </DataTable>
-          </Panel>
+          <>
+            {!props.printMode && (
+              <Panel header={`${item[0]}`} style={{ marginBottom: "30px" }}>
+                <StorageNodesPieCharts
+                  blockSelection={index}
+                  reportContent={item[1]}
+                  printMode={props.printMode}
+                  itemName={item[0]}
+                />
+                <div className="flex justify-center my-5">
+                  <Divider className="h-[1px] bg-gray-400 w-3/4" />
+                </div>
+                <DataTable
+                  value={tableData(item[1])}
+                  showGridlines
+                  tableStyle={{
+                    width: "100%",
+                    boxShadow: "0 4px 10px rgba(0, 0, 0, 0.2)",
+                    fontFamily: "Montserrat, sans-serif",
+                  }}
+                  emptyMessage={`No data to display for ${item[0]}`}
+                  size="small"
+                >
+                  <Column
+                    header=""
+                    field="label"
+                    body={(rowData) => {
+                      return convertUnderlineToTitleCase(rowData.label);
+                    }}
+                  />
+                  <Column
+                    header="Count"
+                    field="count"
+                    style={{ textAlign: "right" }}
+                    body={formatNumber}
+                  />
+                  <Column
+                    header="Total Bytes"
+                    field="totalBytes"
+                    style={{ textAlign: "right" }}
+                    body={formatNumber}
+                  />
+                  <Column
+                    header="Total Time (ms)"
+                    field="totalTime"
+                    style={{ textAlign: "right" }}
+                    body={formatNumber}
+                  />
+                  <Column
+                    header="Latency (ms)"
+                    field="latency"
+                    style={{ textAlign: "right" }}
+                    body={formatNumber}
+                  />
+                  <Column
+                    header="IOPS"
+                    field="iops"
+                    style={{ textAlign: "right" }}
+                    body={formatNumber}
+                  />
+                  <Column
+                    header="Throughput(MB/s)"
+                    field="throughput"
+                    style={{ textAlign: "right" }}
+                    body={formatNumber}
+                  />
+                </DataTable>
+              </Panel>
+            )}
+            {props.printMode && (
+              <>
+                <div className="avoid-page-breaks">
+                  <StorageNodesPieCharts
+                    blockSelection={index}
+                    reportContent={item[1]}
+                    printMode={props.printMode}
+                    itemName={item[0]}
+                  />
+                </div>
+
+                <div className="avoid-page-break">
+                  <DataTable
+                    value={tableData(item[1])}
+                    showGridlines
+                    className="text-xs mt-3"
+                    tableStyle={{
+                      width: "100%",
+                      boxShadow: "0 4px 10px rgba(0, 0, 0, 0.2)",
+                      fontFamily: "Montserrat, sans-serif",
+                    }}
+                    emptyMessage={`No data to display for ${item[0]}`}
+                    size="small"
+                  >
+                    <Column
+                      header=""
+                      field="label"
+                      body={(rowData) => {
+                        return convertUnderlineToTitleCase(rowData.label);
+                      }}
+                    />
+                    <Column
+                      header="Count"
+                      field="count"
+                      style={{ textAlign: "right" }}
+                      body={formatNumber}
+                    />
+                    <Column
+                      header="Total Bytes"
+                      field="totalBytes"
+                      style={{ textAlign: "right" }}
+                      body={formatNumber}
+                    />
+                    <Column
+                      header="Total Time (ms)"
+                      field="totalTime"
+                      style={{ textAlign: "right" }}
+                      body={formatNumber}
+                    />
+                    <Column
+                      header="Latency (ms)"
+                      field="latency"
+                      style={{ textAlign: "right" }}
+                      body={formatNumber}
+                    />
+                    <Column
+                      header="IOPS"
+                      field="iops"
+                      style={{ textAlign: "right" }}
+                      body={formatNumber}
+                    />
+                    <Column
+                      header="Throughput(MB/s)"
+                      field="throughput"
+                      style={{ textAlign: "right" }}
+                      body={formatNumber}
+                    />
+                  </DataTable>
+                </div>
+
+                <div className="page-break"></div>
+              </>
+            )}
+          </>
         );
       })}
-    </>
+    </div>
   );
 };
 

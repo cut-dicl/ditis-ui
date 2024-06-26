@@ -6,28 +6,60 @@ import { showSwalWithButton, showSwalWithTimerAndMessage } from "../../utils/Swa
 import { AppController } from "../../hooks/useContext-hooks/appcontroller-hook/appcontroller-hook";
 import { Button } from "primereact/button";
 import { Panel } from "primereact/panel";
+import Swal from "sweetalert2";
 
 export default function SimulatorPath() {
     const controller = React.useContext(AppController);
-    const [javaPath, setJavaPath] = React.useState(controller.javaPath);
+  const [javaPath, setJavaPath] = React.useState(controller.javaPath);
+  const [tempPath, setTempPath] = React.useState(controller.javaPath);
     useEffect(() => {
       setJavaPath(controller.javaPath);
+      setTempPath(controller.javaPath);
     }, [controller.javaPath]);
 
-    const handleSimulatorPath = (newPath) => {
-        ipcRenderer.invoke('edit-preferences-file', { key: "javaPath", value: newPath }).then((result) => {
-            console.log(result);
-            if (result === undefined || result === true) return;
-            if (result === false) {
-                showSwalWithButton("Error", "The path you entered does not contain jar files. Please select a valid path.", "error", "Ok");
+  const handleSimulatorPath = (newPath) => {
+      if (newPath === javaPath) return;
+      ipcRenderer
+        .invoke("edit-preferences-file", { key: "javaPath", value: newPath })
+        .then((result) => {
+          console.log(result);
+          if (result === undefined || result === true) return;
+          if (result === false) {
+            Swal.fire({
+              icon: "error",
+              color:
+                document.documentElement.className.includes("dark") ? "white" : "",
+              background:
+                document.documentElement.className.includes("dark") ? "#1f2937" : "",
+              title: "Invalid Path",
+              text:
+                "The path you entered is not a valid path. Please select the service jar or the ditis folder.",
+              showCancelButton: true,
+              cancelButtonText: "Revert",
+              showConfirmButton: true,
+              confirmButtonText: "Ok",
+              reverseButtons: true,
+              focusCancel: true,
+            }).then((result) => {
+              if (result.isConfirmed) {
                 return;
-            }
-            setJavaPath(result);
+              }
+              setTempPath(javaPath);
+              return;
+            });
+            return;
+          }
+          setJavaPath(result);
           controller.setJavaPath(result);
           controller.setIsSimulatorInstalled(true);
-            showSwalWithTimerAndMessage("Success", "Simulator found and path set successfully.", "success", 900);
+          showSwalWithTimerAndMessage(
+            "Success",
+            "Simulator found and path set successfully.",
+            "success",
+            900
+          );
         });
-  }
+    };
   
   const headerTemplate = (options) => {
     return (
@@ -45,15 +77,17 @@ export default function SimulatorPath() {
   }
 
   return (
-    <Panel headerTemplate={headerTemplate} className="">
+    <Panel headerTemplate={headerTemplate} className="w-1/2">
       
-      <div className="flex flex-col w-[50%]">
+      <div className="flex flex-col">
         <InputTextarea
           id="outlined-basic"
-          onChange={(e) => handleSimulatorPath(e.target.value)}
-          cols={100}
+          onChange={(e) => setTempPath(e.target.value)}
+          onBlur={(e)=>handleSimulatorPath(e.target.value)}
           rows={2}
-          value={javaPath}
+          value={tempPath}
+          autoResize
+          className="w-full"
         />
 
         <Button

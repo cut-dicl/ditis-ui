@@ -34,6 +34,7 @@ export default function Optimizer() {
     dialogVisible,
     setDialogVisible,
     simulationSelected,
+    setSimulationSelected,
     openResultDialog,
     simulationMode,
     deleteSimulation,
@@ -84,9 +85,9 @@ export default function Optimizer() {
         cancelButtonText: "Cancel",
         confirmButtonText: "Configure",
         reverseButtons: true,
-        color: document.documentElement.className == "dark" ? "white" : "",
+        color: document.documentElement.className.includes("dark") ? "white" : "",
         background:
-          document.documentElement.className == "dark" ? "#1f2937" : "",
+          document.documentElement.className.includes("dark") ? "#1f2937" : "",
       }).then((result) => {
         if (result.isConfirmed) {
           router.push("/preferences");
@@ -101,9 +102,9 @@ export default function Optimizer() {
         cancelButtonText: "Cancel",
         confirmButtonText: "Configure",
         reverseButtons: true,
-        color: document.documentElement.className == "dark" ? "white" : "",
+        color: document.documentElement.className.includes("dark") ? "white" : "",
         background:
-          document.documentElement.className == "dark" ? "#1f2937" : "",
+          document.documentElement.className.includes("dark") ? "#1f2937" : "",
       }).then((result) => {
         if (result.isConfirmed) {
           router.push("/preferences");
@@ -136,11 +137,7 @@ export default function Optimizer() {
 
   const getTraceList = () => {
     ipcRenderer
-      .invoke("get-trace-list", {
-        mode: controller.mode,
-        address: controller.onlineServer.address,
-        auth: controller.onlineServer.auth,
-      })
+      .invoke("get-trace-list")
       .then((result) => {
         if (!result || result.code !== 200) {
           showToast("error", "Error", result.error);
@@ -151,28 +148,26 @@ export default function Optimizer() {
         result.data.forEach((trace) => {
           arr.push(trace.name);
         });
+
+        arr.push("Add New");
         setTraceList(arr);
       });
   };
 
   const getConfigurationList = () => {
     const conflist = {
-      variance: [{ id: 0, name: "Default Variance Configuration" }],
-      optimizer: [{ id: 0, name: "Default Optimizer Configuration" }],
-      storage: [{ id: 0, name: "Default Storage Configuration" }],
+      variance: [{ id: -1, name: "Add New" },{ id: 0, name: "Default Variance Configuration" }],
+      optimizer: [{ id: -1, name: "Add New" },{ id: 0, name: "Default Optimizer Configuration" }],
+      storage: [{ id: -1, name: "Add New" },{ id: 0, name: "Default Storage Configuration" }],
     };
 
-    ipcRenderer.invoke('get-configs', {
-      mode: controller.mode,
-      address: controller.onlineServer.address ? controller.onlineServer.address : null,
-      auth: controller.onlineServer.auth ? controller.onlineServer.auth : null,
-    }).then((result) => {
+    ipcRenderer.invoke('get-configs').then((result) => {
       if (!result) {
         showToast("error", "Error", "Failed to get configurations");
         return;
       }
       if (result.code !== 200) {
-        showToast("error", "Error", result.error);
+        showToast("error", "Error", result.error || "Failed to get configurations");
       }
 
 
@@ -192,6 +187,12 @@ export default function Optimizer() {
           });
         });
       }
+
+      //reverse the arrays
+      Object.keys(conflist).forEach((key) => {
+        conflist[key] = conflist[key].reverse();
+      });
+
       setConfigurationList(conflist);
       });
   };
@@ -206,12 +207,8 @@ export default function Optimizer() {
         reportsEnabled: options.reportsEnabled,
         tracesEnabled: options.tracesEnabled,
         name: options.name,
-        mode: controller.mode,
-        javaPath: controller.javaPath,
         maxEvents: options.maxEvents,
         maxMemory: options.maxMemory,
-        address: controller.onlineServer.address ? controller.onlineServer.address : null,
-        auth: controller.onlineServer.auth ? controller.onlineServer.auth : null,
         debugEnabled: controller.debugEnabled,
       })
       .then((result) => {
@@ -225,7 +222,7 @@ export default function Optimizer() {
           );
           return;
         } else if (!result.data || result.data.id === -1 || result.code !== 200) {
-          showSwalWithButton("Error", result.error ? result.error : "An unknown error Occured", "error", "Ok", null, "80%");
+          showSwalWithButton("Error", result.error ? result.error : "An unknown error occured", "error", "Ok", null, "40%");
           return;
         }
         handleSimulationsTableData(result);
@@ -253,9 +250,10 @@ export default function Optimizer() {
                     className="w-[20rem]"
                     value={options.configuration.storage}
                     options={configurationList.storage.map((item) => {
-                      return { label: item.name, value: item.name };
+                      return { label: item.name === "Add New"? "+ Add New" : item.name, value: item.name };
                     })}
                     onChange={(e) =>
+                      e.value === "Add New" ? router.push("/configurations") :
                       setOptions({
                         ...options,
                         configuration: {
@@ -268,23 +266,24 @@ export default function Optimizer() {
                   <label htmlFor="dd-configuration">
                     Select Storage Configuration
                   </label>
-                </span>                
+                </span>
                 <span className="p-float-label mt-5">
                   <Dropdown
                     inputId="dd-optimizer"
                     className="w-[20rem]"
                     options={configurationList.optimizer.map((item) => {
-                      return { label: item.name, value: item.name };
+                      return { label: item.name === "Add New"? "+ Add New" : item.name, value: item.name };
                     })}
                     value={options.configuration.optimizer}
-                    onChange={(e) =>
+                    onChange={(e) => 
+                      e.value === "Add New" ? router.push("/configurations") :
                       setOptions({
                         ...options,
                         configuration: {
                           ...options.configuration,
                           optimizer: e.value,
                         },
-                      })
+                      })                    
                     }
                   />
                   <label htmlFor="dd-optimizer">
@@ -296,10 +295,11 @@ export default function Optimizer() {
                     inputId="dd-variance"
                     className="w-[20rem]"
                     options={configurationList.variance.map((item) => {
-                      return { label: item.name, value: item.name };
+                      return { label: item.name === "Add New"? "+ Add New" : item.name, value: item.name };
                     })}
                     value={options.configuration.variance}
                     onChange={(e) =>
+                      e.value === "Add New" ? router.push("/configurations") :
                       setOptions({
                         ...options,
                         configuration: {
@@ -323,11 +323,11 @@ export default function Optimizer() {
                   inputId="dd-trace"
                   className="w-[20rem]"
                   showClear={options.trace !== ""}
-                  options={traceList}
+                  options={traceList.map((item) => {
+                    return { label: item=== "Add New"? "+ Add New" : item, value: item };
+                  })}
                   value={options.trace}
-                  onChange={(e) =>
-                    setOptions({ ...options, trace: e.value })
-                  }
+                  onChange={(e) => e.value === "Add New" ? router.push("/traces") : setOptions({ ...options, trace: e.value })}
                 />
                 <label htmlFor="dd-trace">Select Trace</label>
               </span>
@@ -343,7 +343,9 @@ export default function Optimizer() {
                 <InputText
                   className="w-[300px] mt-2"
                   placeholder="Please enter name"
-                  onChange={(e) => setOptions({ ...options, name: e.target.value })}
+                  onChange={(e) =>
+                    setOptions({ ...options, name: e.target.value })
+                  }
                   value={options.name}
                 />
               </div>
@@ -364,7 +366,9 @@ export default function Optimizer() {
                 <InputText
                   className={"mt-2 " + error.maxEvents}
                   placeholder="Max Events"
-                  onChange={(e) => setOptions({ ...options, maxEvents: e.target.value })}
+                  onChange={(e) =>
+                    setOptions({ ...options, maxEvents: e.target.value })
+                  }
                   value={options.maxEvents}
                 />
                 <small
@@ -391,7 +395,9 @@ export default function Optimizer() {
                 <InputText
                   className={"mt-2 " + error.maxMemory}
                   placeholder="Max JVM Memory (GB)"
-                  onChange={(e) => setOptions({ ...options, maxMemory: e.target.value })}
+                  onChange={(e) =>
+                    setOptions({ ...options, maxMemory: e.target.value })
+                  }
                   value={options.maxMemory}
                 />
                 <small
@@ -410,7 +416,9 @@ export default function Optimizer() {
                     name="reports"
                     className="mt-2"
                     checked={options.reportsEnabled}
-                    onChange={(e) => setOptions({ ...options, reportsEnabled: e.checked })}
+                    onChange={(e) =>
+                      setOptions({ ...options, reportsEnabled: e.checked })
+                    }
                   />
                   <label htmlFor="cb-reports" className="ml-2">
                     Generate report files
@@ -431,7 +439,9 @@ export default function Optimizer() {
                     inputId="cb-traces"
                     name="trace"
                     checked={options.tracesEnabled}
-                    onChange={(e) => setOptions({ ...options, tracesEnabled: e.checked })}
+                    onChange={(e) =>
+                      setOptions({ ...options, tracesEnabled: e.checked })
+                    }
                   />
                   <label htmlFor="cb-traces" className="ml-2">
                     Generate output trace files
@@ -453,18 +463,35 @@ export default function Optimizer() {
 
           {/*Start Button*/}
           <div className="flex flex-col my-5">
-            <Button
-              id="optimizerButton"
-              disabled={
-                options.trace.length == 0 ||
-                (options.configuration.storage && options.configuration.storage.length == 0)
-              }
-              label={running ? "Optimization Running" : "Start Optimizer"}
-              onClick={startOptimizer}
-              loading={running}
-              style={{ width: "fit-content" }}
-              ref={startRef}
-            ></Button>
+            <Tooltip target=".upload-button" position="top" />
+            <span className="upload-button">
+              <Button
+                id="optimizerButton"
+                disabled={
+                  options.trace.length == 0 ||
+                  (options.configuration.storage &&
+                    options.configuration.storage.length == 0) ||
+                  (controller.mode === "Local" && controller.javaPath === "") ||
+                  (controller.mode === "Online" &&
+                    controller.onlineServer.address === "")
+                }
+                tooltip={
+                  controller.mode === "Local" && controller.javaPath === ""
+                    ? "Please configure the simulator in preferences"
+                    : controller.mode === "Online" &&
+                      controller.onlineServer.address === ""
+                    ? "Please configure the server to use in preferences"
+                    : ""
+                }
+                tooltipOptions={{ showOnDisabled: true }}
+                label={running ? "Optimization Running" : "Start Optimizer"}
+                onClick={startOptimizer}
+                loading={running}
+                style={{ width: "fit-content" }}
+                ref={startRef}
+              ></Button>
+            </span>
+
             <small className="italic">
               {controller.debugEnabled ? "Debug mode enabled" : ""}
             </small>
@@ -480,6 +507,7 @@ export default function Optimizer() {
             dialogVisible={dialogVisible}
             setDialogVisible={setDialogVisible}
             simulationSelected={simulationSelected}
+            setSimulationSelected={setSimulationSelected}
             deleteSimulation={deleteSimulation}
             clearSimulation={clearSimulation}
             showToast={showToast}

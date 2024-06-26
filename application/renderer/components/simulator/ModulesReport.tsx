@@ -10,11 +10,14 @@ import { Panel } from "primereact/panel";
 import { Divider } from "primereact/divider";
 import colorPalette from "../generic/colorPallete";
 import { convertUnderlineToTitleCase } from "../../utils/convertStringFunctions";
+import { useTheme } from "next-themes";
 
-const ModulesReport = () => {
+const ModulesReport = (props) => {
   const reportCtx = useContext(ReportContext);
-
-  const modulesContent = reportCtx.reportData[reportCtx.reportShown];
+  const theme = useTheme();
+  const modulesContent = props.printMode
+    ? reportCtx.reportData[props.moduleLayer]
+    : reportCtx.reportData[reportCtx.reportShown];
 
   const pieData = (layerPieData, index: number) => {
     return {
@@ -87,9 +90,10 @@ const ModulesReport = () => {
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        position: "right",
+        position: "bottom",
         labels: {
           usePointStyle: true,
+          color: theme.theme === "dark" ? "lightgrey" : "black",
         },
       },
     },
@@ -130,8 +134,6 @@ const ModulesReport = () => {
           })
           .every((element) => element === 0);
 
-        console.log(operationsZero);
-
         const bytesZero = bytes
           .map((arrayItem) => {
             return arrayItem[1][index];
@@ -139,128 +141,308 @@ const ModulesReport = () => {
           .every((element) => element === 0);
 
         return (
-          <div className="mb-20">
-            <Panel
-              header={moduleName}
-              style={{
-                fontFamily: "Montserrat, sans-serif",
-              }}
-            >
-              <div
-                className="flex justify-between"
+          <div className="mb-20" key={index}>
+            {!props.printMode && (
+              <Panel
+                header={moduleName}
                 style={{
-                  padding: "20px",
-                }}
-              >
-                {operationsZero ? (
-                  <p
-                    style={{
-                      fontFamily: "Montserrat, sans-serif",
-                    }}
-                  >
-                    No Results for Operations
-                  </p>
-                ) : (
-                  <ReportItemCard key={moduleName} width={"49%"}>
-                    <h1
-                      className="text-l font-bold text-black"
-                      style={{ fontFamily: "Montserrat, sans-serif" }}
-                    >
-                      Operations
-                    </h1>
-                    <Chart
-                      type="pie"
-                      data={pieData(operations, index)}
-                      options={options}
-                    />
-                  </ReportItemCard>
-                )}
-
-                {bytesZero ? (
-                  <p
-                    style={{
-                      fontFamily: "Montserrat, sans-serif",
-                    }}
-                  >
-                    No Results for Bytes
-                  </p>
-                ) : (
-                  <ReportItemCard key={moduleName + "1"} width={"49%"}>
-                    <h1
-                      className="text-l font-bold text-black"
-                      style={{ fontFamily: "Montserrat, sans-serif" }}
-                    >
-                      Bytes
-                    </h1>
-                    <Chart
-                      type="pie"
-                      data={pieData(bytes, index)}
-                      options={options}
-                    />
-                  </ReportItemCard>
-                )}
-              </div>
-
-              <div className="flex justify-center my-5">
-                <Divider className="h-[1px] bg-gray-400 w-2/4" />
-              </div>
-              <DataTable
-                value={tableData(modulesContent[1][moduleName])}
-                showGridlines
-                tableStyle={{
-                  width: "100%",
-                  marginBottom: "10px",
-                  boxShadow: "0 4px 10px rgba(0, 0, 0, 0.2)",
                   fontFamily: "Montserrat, sans-serif",
                 }}
-                emptyMessage={`No data to display for ${moduleName}`}
-                size="small"
               >
-                <Column
-                  header=""
-                  field="label"
-                  body={(rowData) => {
-                    return convertUnderlineToTitleCase(rowData.label);
+                <div
+                  className="flex justify-between"
+                  style={{
+                    padding: "20px",
                   }}
-                />
-                <Column
-                  header="Count"
-                  field="count"
-                  style={{ textAlign: "right" }}
-                  body={formatNumber}
-                />
-                <Column
-                  header="Total Bytes"
-                  field="totalBytes"
-                  style={{ textAlign: "right" }}
-                  body={formatNumber}
-                />
-                <Column
-                  header="Total Time (ms)"
-                  field="totalTime"
-                  style={{ textAlign: "right" }}
-                  body={formatNumber}
-                />
-                <Column
-                  header="Latency (ms)"
-                  field="latency"
-                  style={{ textAlign: "right" }}
-                  body={formatNumber}
-                />
-                <Column
-                  header="IOPS"
-                  field="iops"
-                  style={{ textAlign: "right" }}
-                  body={formatNumber}
-                />
-                <Column
-                  header="Throughput(MB/s)"
-                  field="throughput"
-                  style={{ textAlign: "right" }}
-                  body={formatNumber}
-                />
-              </DataTable>
-            </Panel>
+                >
+                  {operationsZero ? (
+                    <p
+                      style={{
+                        fontFamily: "Montserrat, sans-serif",
+                      }}
+                    >
+                      No Results for Operations
+                    </p>
+                  ) : (
+                    <div key={moduleName} style={{ width: "48%" }}>
+                      <div
+                        style={{
+                          borderRadius: "8px",
+                          padding: "10px",
+                          borderColor: "rgba(0, 0, 0, 0.1)",
+                            borderWidth: "2px",
+                        }}
+                      >
+                        <h1
+                          className="text-l font-bold"
+                          style={{ fontFamily: "Montserrat, sans-serif" }}
+                        >
+                          Operations
+                        </h1>
+                        <Chart
+                          type="pie"
+                          data={pieData(operations, index)}
+                            options={options}
+                            
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {bytesZero ? (
+                    <p
+                      style={{
+                        fontFamily: "Montserrat, sans-serif",
+                      }}
+                    >
+                      No Results for Bytes
+                    </p>
+                  ) : (
+                    <div key={moduleName + "1"} style={{ width: "48%" }}>
+                      <div
+                        style={{
+                          borderRadius: "8px",
+                          padding: "10px",
+                          borderColor: "rgba(0, 0, 0, 0.1)",
+                          borderWidth: "2px",
+                        }}
+                      >
+                        <h1
+                          className="text-l font-bold"
+                          style={{ fontFamily: "Montserrat, sans-serif" }}
+                        >
+                          Bytes
+                        </h1>
+                        <Chart
+                          type="pie"
+                          data={pieData(bytes, index)}
+                          options={options}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex justify-center my-5">
+                  <Divider className="h-[1px] bg-gray-400 w-2/4" />
+                </div>
+                <DataTable
+                  value={tableData(modulesContent[1][moduleName])}
+                  showGridlines
+                  tableStyle={{
+                    width: "100%",
+                    marginBottom: "10px",
+                    boxShadow: "0 4px 10px rgba(0, 0, 0, 0.2)",
+                    fontFamily: "Montserrat, sans-serif",
+                  }}
+                  emptyMessage={`No data to display for ${moduleName}`}
+                  size="small"
+                >
+                  <Column
+                    header=""
+                    field="label"
+                    body={(rowData) => {
+                      return convertUnderlineToTitleCase(rowData.label);
+                    }}
+                  />
+                  <Column
+                    header="Count"
+                    field="count"
+                    style={{ textAlign: "right" }}
+                    body={formatNumber}
+                  />
+                  <Column
+                    header="Total Bytes"
+                    field="totalBytes"
+                    style={{ textAlign: "right" }}
+                    body={formatNumber}
+                  />
+                  <Column
+                    header="Total Time (ms)"
+                    field="totalTime"
+                    style={{ textAlign: "right" }}
+                    body={formatNumber}
+                  />
+                  <Column
+                    header="Latency (ms)"
+                    field="latency"
+                    style={{ textAlign: "right" }}
+                    body={formatNumber}
+                  />
+                  <Column
+                    header="IOPS"
+                    field="iops"
+                    style={{ textAlign: "right" }}
+                    body={formatNumber}
+                  />
+                  <Column
+                    header="Throughput(MB/s)"
+                    field="throughput"
+                    style={{ textAlign: "right" }}
+                    body={formatNumber}
+                  />
+                </DataTable>
+              </Panel>
+            )}
+            {props.printMode && (
+              <>
+                <div className="avoid-page-break">
+                  {index === 0 && (
+                    <div className="flex justify-center mb-5">
+                      <span
+                        style={{
+                          fontFamily: "Montserrat, sans-serif",
+                        }}
+                        className="font-bold text-center text-2xl"
+                      >
+                        Modules Report
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex justify-center mb-5">
+                    <span
+                      style={{
+                        fontFamily: "Montserrat, sans-serif",
+                      }}
+                      className="font-bold text-center text-xl"
+                    >
+                      {moduleName}
+                    </span>
+                  </div>
+                  <div
+                    className="flex justify-evenly"
+                    style={{
+                      padding: "20px",
+                    }}
+                  >
+                    {operationsZero ? (
+                      <p
+                        style={{
+                          fontFamily: "Montserrat, sans-serif",
+                        }}
+                      >
+                        No Results for Operations
+                      </p>
+                    ) : (
+                      <ReportItemCard key={moduleName} style={{ width: "48%", minHeight: "400px" }}>
+                        <h1
+                          className="text-l font-bold"
+                          style={{ fontFamily: "Montserrat, sans-serif" }}
+                        >
+                          Operations
+                        </h1>
+                        <div className="flex justify-center">
+                          <Chart
+                            type="pie"
+                            data={pieData(operations, index)}
+                              options={options}
+                              height="350px"
+                              className="pie"
+                          />
+                        </div>
+                      </ReportItemCard>
+                    )}
+
+                    {bytesZero ? (
+                      <p
+                        style={{
+                          fontFamily: "Montserrat, sans-serif",
+                        }}
+                      >
+                        No Results for Bytes
+                      </p>
+                    ) : (
+                      <ReportItemCard
+                        key={moduleName + "1"}
+                        style={{ width: "48%", minHeight: "400px"}}
+                      >
+                        <h1
+                          className="text-l font-bold"
+                          style={{ fontFamily: "Montserrat, sans-serif" }}
+                        >
+                          Bytes
+                        </h1>
+                        <div className="flex justify-center">
+                          <Chart
+                            type="pie"
+                            data={pieData(bytes, index)}
+                              options={options}
+                              className="pie"
+                          />
+                        </div>
+                      </ReportItemCard>
+                    )}
+                  </div>
+                </div>
+
+                {!props.printMode && (
+                  <div className="flex justify-center my-5">
+                    <Divider className="h-[1px] bg-gray-400 w-2/4" />
+                  </div>
+                )}
+
+                <div className="avoid-page-break">
+                  <DataTable
+                    value={tableData(modulesContent[1][moduleName])}
+                    showGridlines
+                    tableStyle={{
+                      width: "100%",
+                      marginBottom: "10px",
+                      boxShadow: "0 4px 10px rgba(0, 0, 0, 0.2)",
+                      fontFamily: "Montserrat, sans-serif",
+                    }}
+                    emptyMessage={`No data to display for ${moduleName}`}
+                    size="small"
+                    className="text-xs"
+                  >
+                    <Column
+                      header=""
+                      field="label"
+                      body={(rowData) => {
+                        return convertUnderlineToTitleCase(rowData.label);
+                      }}
+                    />
+                    <Column
+                      header="Count"
+                      field="count"
+                      style={{ textAlign: "right" }}
+                      body={formatNumber}
+                    />
+                    <Column
+                      header="Total Bytes"
+                      field="totalBytes"
+                      style={{ textAlign: "right" }}
+                      body={formatNumber}
+                    />
+                    <Column
+                      header="Total Time (ms)"
+                      field="totalTime"
+                      style={{ textAlign: "right" }}
+                      body={formatNumber}
+                    />
+                    <Column
+                      header="Latency (ms)"
+                      field="latency"
+                      style={{ textAlign: "right" }}
+                      body={formatNumber}
+                    />
+                    <Column
+                      header="IOPS"
+                      field="iops"
+                      style={{ textAlign: "right" }}
+                      body={formatNumber}
+                    />
+                    <Column
+                      header="Throughput(MB/s)"
+                      field="throughput"
+                      style={{ textAlign: "right" }}
+                      body={formatNumber}
+                    />
+                  </DataTable>
+                </div>
+                <div className="page-break"></div>
+              </>
+            )}
           </div>
         );
       })}

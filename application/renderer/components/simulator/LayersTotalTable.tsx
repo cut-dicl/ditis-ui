@@ -8,14 +8,14 @@ import ReportCard from "../../UI/ReportCard";
 import { Panel } from "primereact/panel";
 import colorPalette from "../generic/colorPallete";
 import { convertUnderlineToTitleCase } from "../../utils/convertStringFunctions";
+import { useTheme } from "next-themes";
 
-const LayersStatisticsTotalReport = () => {
+const LayersStatisticsTotalReport = (props) => {
   const reportCtx = useContext(ReportContext);
+  const theme = useTheme();
 
   const layersTotalTableContent: IReportObject =
     reportCtx.reportData["Layer Statistics"];
-
-  console.log(layersTotalTableContent);
 
   const titles = [
     {
@@ -106,149 +106,280 @@ const LayersStatisticsTotalReport = () => {
       tooltips: {
         mode: "index",
       },
+      legend: {
+        labels: {
+          color: theme.theme === "dark" ? "lightgrey" : "black",
+        },
+      },
     },
     scales: {
+      x: {
+        ticks: {
+          color: theme.theme === "dark" ? "lightgrey" : "black",
+        },
+      },
       y: {
         type: "logarithmic",
+        ticks: {
+          color: theme.theme === "dark" ? "lightgrey" : "black",
+        },
       },
     },
   };
 
   return (
     <>
-      {titles.map((item) => {
-        const operationsLabels = item.data
-          .filter((item) => {
-            if (item[0].toLocaleLowerCase().endsWith("operations")) {
-              return item[0];
-            }
-          })
-          .map((item) => {
-            return item[0].replace(/^[^_]*_|_[^_]*$/g, "");
-          });
-
-        const bytesLabels = item.data
-          .filter((item) => {
-            if (item[0].toLocaleLowerCase().endsWith("bytes")) {
-              return item[0];
-            }
-          })
-          .map((item) => {
-            return item[0].replace(/^[^_]*_|_[^_]*$/g, "");
-          });
-        const timeLabels = item.data
-          .filter((item) => {
-            if (item[0].toLocaleLowerCase().endsWith("time")) {
-              return item[0].replace(/^[^_]*_|_[^_]*$/g, "");
-            }
-          })
-          .map((item) => {
-            return item[0];
-          });
-
-        const operations = item.data.filter((val) =>
-          val[0].toLocaleLowerCase().endsWith("operations")
-        );
-        const bytes = item.data.filter((val) =>
-          val[0].toLocaleLowerCase().endsWith("bytes")
-        );
-        const time = item.data.filter((val) =>
-          val[0].toLocaleLowerCase().endsWith("time")
-        );
-
-        return (
-          <div key={item.label} className="mb-20">
-            <Panel
-              header={`${item.label}`}
+      <div className="avoid-page-break">
+        {props.printMode && (
+          <div className="flex justify-center mb-5">
+            <span
               style={{
                 fontFamily: "Montserrat, sans-serif",
               }}
+              className="font-bold text-center text-2xl"
             >
-              <ReportCard>
-                <ReportItemCard key={"Operations"} width={"30%"}>
-                  <h1
-                    className="text-l font-bold text-black"
-                    style={{ fontFamily: "Montserrat, sans-serif" }}
-                  >
-                    Operations
-                  </h1>
-
-                  <Chart
-                    type="bar"
-                    data={verticalBarsDataHandler(operationsLabels, operations)}
-                    options={chartOptions}
-                    style={{minHeight: "350px"}}
-                  />
-                </ReportItemCard>
-                <ReportItemCard key={"Bytes"} width={"30%"}>
-                  <h1
-                    className="text-l font-bold text-black"
-                    style={{ fontFamily: "Montserrat, sans-serif" }}
-                  >
-                    Bytes
-                  </h1>
-
-                  <Chart
-                    type="bar"
-                    data={verticalBarsDataHandler(bytesLabels, bytes)}
-                    options={chartOptions}
-                    style={{minHeight: "350px"}}
-                    />
-                </ReportItemCard>
-                <ReportItemCard key={"Time"} width={"30%"}>
-                  <h1
-                    className="text-l font-bold text-black"
-                    style={{ fontFamily: "Montserrat, sans-serif" }}
-                  >
-                    Time
-                  </h1>
-
-                  <Chart
-                    type="bar"
-                    data={verticalBarsDataHandler(timeLabels, time)}
-                    options={chartOptions}
-                    style={{minHeight: "350px"}}
-                  />
-                </ReportItemCard>
-              </ReportCard>
-            </Panel>
+              Layer Statistics
+            </span>
           </div>
-        );
-      })}
+        )}
+        {titles.map((item) => {
+          const operationsLabels = item.data
+            .filter((item) => {
+              if (item[0].toLocaleLowerCase().endsWith("operations")) {
+                return item[0];
+              }
+            })
+            .map((item) => {
+              return item[0].replace(/^[^_]*_|_[^_]*$/g, "");
+            });
+
+          const bytesLabels = item.data
+            .filter((item) => {
+              if (item[0].toLocaleLowerCase().endsWith("bytes")) {
+                return item[0];
+              }
+            })
+            .map((item) => {
+              return item[0].replace(/^[^_]*_|_[^_]*$/g, "");
+            });
+          const timeLabels = item.data
+            .filter((item) => {
+              if (item[0].toLocaleLowerCase().endsWith("time")) {
+                return item[0].replace(/^[^_]*_|_[^_]*$/g, "");
+              }
+            })
+            .map((item) => {
+              return item[0];
+            });
+
+          const operations = item.data.filter((val) =>
+            val[0].toLocaleLowerCase().endsWith("operations")
+          );
+          const bytes = item.data.filter((val) =>
+            val[0].toLocaleLowerCase().endsWith("bytes")
+          );
+          const time = item.data.filter((val) =>
+            val[0].toLocaleLowerCase().endsWith("time")
+          );
+
+          return (
+            <div key={item.label} className="mb-20 avoid-page-break">
+              {!props.printMode && (
+                <Panel
+                  header={`${item.label}`}
+                  style={{
+                    fontFamily: "Montserrat, sans-serif",
+                  }}
+                >
+                  <ReportCard>
+                    <ReportItemCard key={"Operations"} style={{ width: "30%" }}>
+                      <h1
+                        className="text-l font-bold"
+                        style={{ fontFamily: "Montserrat, sans-serif" }}
+                      >
+                        Operations
+                      </h1>
+
+                      <Chart
+                        type="bar"
+                        data={verticalBarsDataHandler(
+                          operationsLabels,
+                          operations
+                        )}
+                        options={chartOptions}
+                        style={{ minHeight: "350px" }}
+                      />
+                    </ReportItemCard>
+                    <ReportItemCard key={"Bytes"} style={{ width: "30%" }}>
+                      <h1
+                        className="text-l font-bold "
+                        style={{ fontFamily: "Montserrat, sans-serif" }}
+                      >
+                        Bytes
+                      </h1>
+
+                      <Chart
+                        type="bar"
+                        data={verticalBarsDataHandler(bytesLabels, bytes)}
+                        options={chartOptions}
+                        style={{ minHeight: "350px" }}
+                      />
+                    </ReportItemCard>
+                    <ReportItemCard key={"Time"} style={{ width: "30%" }}>
+                      <h1
+                        className="text-l font-bold "
+                        style={{ fontFamily: "Montserrat, sans-serif" }}
+                      >
+                        Time
+                      </h1>
+
+                      <Chart
+                        type="bar"
+                        data={verticalBarsDataHandler(timeLabels, time)}
+                        options={chartOptions}
+                        style={{ minHeight: "350px" }}
+                      />
+                    </ReportItemCard>
+                  </ReportCard>
+                </Panel>
+              )}
+              {props.printMode && (
+                <>
+                  <ReportCard>
+                    <div className="w-full mb-4 flex justify-center">
+                      <span className="text-center font-bold text-xl border-y-2 border-slate-300 py-1 px-4">
+                        {item.label}
+                      </span>
+                    </div>
+                    <ReportItemCard key={"Operations"} style={{ width: "48%" }}>
+                      <h1
+                        className="text-l font-bold"
+                        style={{ fontFamily: "Montserrat, sans-serif" }}
+                      >
+                        Operations
+                      </h1>
+
+                      <Chart
+                        type="bar"
+                        className="layer-vertical-bar-chart"
+                        data={verticalBarsDataHandler(
+                          operationsLabels,
+                          operations
+                        )}
+                        options={chartOptions}
+                        style={{ minHeight: "300px" }}
+                      />
+                    </ReportItemCard>
+                    <ReportItemCard key={"Bytes"} style={{ width: "48%" }}>
+                      <h1
+                        className="text-l font-bold "
+                        style={{ fontFamily: "Montserrat, sans-serif" }}
+                      >
+                        Bytes
+                      </h1>
+
+                      <Chart
+                        type="bar"
+                        className="layer-vertical-bar-chart"
+                        data={verticalBarsDataHandler(bytesLabels, bytes)}
+                        options={chartOptions}
+                        style={{ minHeight: "300px" }}
+                      />
+                    </ReportItemCard>
+                    <ReportItemCard key={"Time"} style={{ width: "48%" }}>
+                      <h1
+                        className="text-l font-bold "
+                        style={{ fontFamily: "Montserrat, sans-serif" }}
+                      >
+                        Time
+                      </h1>
+
+                      <Chart
+                        type="bar"
+                        className="layer-vertical-bar-chart"
+                        data={verticalBarsDataHandler(timeLabels, time)}
+                        options={chartOptions}
+                        style={{ minHeight: "300px" }}
+                      />
+                    </ReportItemCard>
+                  </ReportCard>
+                  <div className="force-break"></div>
+                </>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
       <div>
-        <Panel
-          header={otherData.label}
-          style={{
-            fontFamily: "Montserrat, sans-serif",
-          }}
-        >
-          <div
-            key={otherData.label}
+        {!props.printMode && (
+          <Panel
+            header={otherData.label}
             style={{
-              background: "#f0f0f0",
-              borderRadius: "8px",
-              padding: "16px",
-              boxShadow: "0 4px 10px rgba(0, 0, 0, 0.3)",
+              fontFamily: "Montserrat, sans-serif",
             }}
           >
-            <h1
-              className="text-l font-bold text-black"
-              style={{ fontFamily: "Montserrat, sans-serif" }}
+            <div
+              key={otherData.label}
+              style={{
+                borderRadius: "8px",
+                padding: "10px",
+                borderColor: "rgba(0, 0, 0, 0.1)",
+                borderWidth: "2px",
+              }}
             >
-              Other Data
-            </h1>
+              <h1
+                className="text-l font-bold"
+                style={{ fontFamily: "Montserrat, sans-serif" }}
+              >
+                Other Data
+              </h1>
 
-            <Chart
-              type="bar"
-              data={verticalBarsDataHandler(
-                otherData.filteredLabels,
-                otherData.data
-              )}
-              options={{ ...chartOptions, aspectRatio: 0.5 }}
-              style={{ minHeight: "600px" }}
-            />
-          </div>
-        </Panel>
+              <Chart
+                type="bar"
+                data={verticalBarsDataHandler(
+                  otherData.filteredLabels,
+                  otherData.data
+                )}
+                options={{ ...chartOptions, aspectRatio: 0.5 }}
+                style={{ minHeight: "600px" }}
+              />
+            </div>
+          </Panel>
+        )}
+        {props.printMode && (
+          <>
+            <div
+              key={otherData.label}
+              style={{
+                borderRadius: "8px",
+                padding: "10px",
+                borderColor: "rgba(0, 0, 0, 0.1)",
+                borderWidth: "2px",
+              }}
+              className="dark:text-white avoid-page-break"
+            >
+              <h1
+                className="text-l font-bold"
+                style={{ fontFamily: "Montserrat, sans-serif" }}
+              >
+                Other Data
+              </h1>
+
+              <Chart
+                type="bar"
+                className="big-vertical-bar-chart"
+                data={verticalBarsDataHandler(
+                  otherData.filteredLabels,
+                  otherData.data
+                )}
+                options={chartOptions}
+                style={{ minHeight: "600px" }}
+              />
+            </div>
+            <div className="page-break"></div>
+          </>
+        )}
       </div>
     </>
   );

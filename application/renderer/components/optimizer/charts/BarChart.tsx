@@ -7,17 +7,25 @@ import ChartDataLabels from "chartjs-plugin-datalabels";
 import { Panel } from 'primereact/panel';
 import { useTheme } from 'next-themes';
 
-export default function BarChart({ plotdata, metric, chartSize }) {
+export default function BarChart({ plotdata, metric, chartSize, print }) {
     let chart;
     Chart.register(Colors);
     Chart.register(BarElement, CategoryScale, BarController, LinearScale, Tooltip);
     let theme = useTheme();
+    const [err, setErr] = React.useState(false);
     
 
     const createChart = () => {
 
+        if (plotdata.labels.length === 0) {
+            setErr(true);
+            return;
+        }
+
         // @ts-ignore
-        const ctx = document.getElementById(metric).getContext("2d");
+        const ctx = document.getElementById("Bar_"+metric).getContext("2d");
+        if (chart)
+            chart.destroy();
         chart = new Chart(ctx, {
             type: 'bar',
             data: plotdata,
@@ -27,7 +35,7 @@ export default function BarChart({ plotdata, metric, chartSize }) {
                 maintainAspectRatio: false,
                 plugins: {
                     legend: {
-                        display: false,
+                        display: print,
                     },
                     tooltip: {
                         position: 'average',
@@ -37,7 +45,16 @@ export default function BarChart({ plotdata, metric, chartSize }) {
                         font: {
                             weight: 'bold'
                         }
-                    }
+                    },
+                    title: {
+                        display: print,
+                        text: convertUnderlineToTitleCase(metric),
+                        color: theme.theme === "dark" ? "white" : "black",
+                        font: {
+                            size: 20,
+                            weight: 'bold'
+                        }
+                    },
                 },
                 scales: {
                     x: {
@@ -66,19 +83,37 @@ export default function BarChart({ plotdata, metric, chartSize }) {
             },
             plugins: [ChartDataLabels]
         });
-        chart.resize(0,(plotdata.labels[0].length*160 > 250 ? plotdata.labels[0].length*160 : 250));
+        chart.resize(0,Math.max(plotdata.labels.length * plotdata.labels[0].length * 30, 200));
+        
     };
 
     React.useEffect(() => {
         createChart();
         return () => {
-            chart.destroy();
+            if (chart)
+                chart.destroy();
         };
     }, [plotdata]);
 
+
+    if (err) {
+        return (
+            <div className="text-center text-danger">No data available</div>
+        )
+    }
+    if (print) {
+        return (
+            <div style={{ width: "100%" }}>
+                <canvas id={"Bar_" + metric} style={{display:"block"}}></canvas>
+            </div>         
+        )
+    }
+
     return (
-            <Panel header={convertUnderlineToTitleCase(metric)} className="text-center" style={{ width: chartSize, height: "auto" }}>             
-                <canvas id={metric}></canvas>              
-            </Panel>
+        <Panel header={convertUnderlineToTitleCase(metric)} className="text-center" style={{ width: chartSize }}>
+            <div>
+                <canvas id={"Bar_" + metric}></canvas>
+            </div>
+        </Panel>
     )
 }

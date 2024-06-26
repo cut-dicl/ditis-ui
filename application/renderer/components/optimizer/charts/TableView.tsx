@@ -1,9 +1,15 @@
-import React, { use } from "react";
+import React from "react";
 import { convertUnderlineToTitleCase } from "../../../utils/convertStringFunctions";
 import Table from "./Table";
-import { ScrollTop } from "primereact/scrolltop";
 
-export default function TableView({ results, selectedMetrics }) {
+interface TableViewProps {
+  results: any;
+  selectedMetrics: string[];
+  print?: boolean;
+  slice?: number;
+}
+
+export default function TableView({ results, selectedMetrics, print, slice }: TableViewProps) {
   const [groups, setGroups] = React.useState([]);
 
   const grouping = () => {
@@ -21,6 +27,29 @@ export default function TableView({ results, selectedMetrics }) {
     setGroups(grouping());
   }, [selectedMetrics]);
 
+
+  if (print) {
+    return (
+        groups.map((group) => {
+          return (<>
+            <Table
+              props={{
+                header: group, data: results, columns:
+                  selectedMetrics
+                    .filter((val) => convertUnderlineToTitleCase(val).split(" ")[0] === group)
+                    .map((val) => {
+                      return { field: val, header: convertUnderlineToTitleCase(val).slice(group.length).trim() };
+                    }), print, slice
+              }}
+              key={group}
+            />
+            <div className="page-break"></div>
+            </>
+          );
+        })
+    );
+  }
+
   return (
     <div>
       {groups.map((group) => {
@@ -32,9 +61,10 @@ export default function TableView({ results, selectedMetrics }) {
                   .filter((val) => convertUnderlineToTitleCase(val).split(" ")[0] === group)
                   .map((val) => {
                     return { field: val, header: convertUnderlineToTitleCase(val).slice(group.length).trim() };
-                  }),
+                  }), print
             }}
-            key={group} />
+            key={group}
+          />
         );
       })}
     </div>

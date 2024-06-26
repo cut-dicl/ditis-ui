@@ -6,7 +6,6 @@ import { MultiSelect, MultiSelectChangeEvent } from "primereact/multiselect";
 import { Divider } from "primereact/divider";
 import { VarianceOptions } from "./VarianceOptions";
 import { Button } from "primereact/button";
-import { VarianceFormContext } from "../../../hooks/useContext-hooks/variance-form-hook/variance-form-hook";
 import { Dropdown } from "primereact/dropdown";
 import { GroupingOptions } from "./GroupingOptions";
 import { ConfirmationDialog } from "../ConfirmationDialog";
@@ -18,6 +17,7 @@ import { useVarianceForm } from "../../../hooks/custom-hooks/useVarianceForm";
 import { AppController } from "../../../hooks/useContext-hooks/appcontroller-hook/appcontroller-hook";
 import Swal from "sweetalert2";
 import { Content } from "../FormInput";
+import { ConfFormContext } from "../../../hooks/useContext-hooks/conf-form-hook/conf-form-hook";
 
 interface IVarianceForm {
   showForm: React.Dispatch<React.SetStateAction<configurationContentShown>>;
@@ -27,7 +27,8 @@ interface IVarianceForm {
 export const VarianceForm = ({ showForm, varianceSettings }: IVarianceForm) => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [showDialog, setShowDialog] = useState(false);
-  const VarFormCtx = useContext(VarianceFormContext);
+  const VarFormCtx = useContext(ConfFormContext);
+  const [disabledButton, setButtonDisabled] = useState(false);
   const appmode = useContext(AppController);
 
   const {
@@ -66,8 +67,8 @@ export const VarianceForm = ({ showForm, varianceSettings }: IVarianceForm) => {
             const formattedObject = (item[1] as any[]).map((item) => {
               if ("alternatives" in item)
                 return {
-                  label: item.key,
-                  value: item.key,
+                  label: item.key.trim(),
+                  value: item.key.trim(),
                   alternatives: item.alternatives,
                   disabled: false,
                 };
@@ -108,8 +109,10 @@ export const VarianceForm = ({ showForm, varianceSettings }: IVarianceForm) => {
     Swal.fire({
       icon: "question",
       title: `Are you sure you want go back`,
-      color: document.documentElement.className == "dark" ? "white" : "",
-      background: document.documentElement.className == "dark" ? "#1f2937" : "",
+      color: document.documentElement.className.includes("dark") ? "white" : "",
+      background: document.documentElement.className.includes("dark")
+        ? "#1f2937"
+        : "",
       showDenyButton: true,
       showConfirmButton: true,
       confirmButtonText: "Yes",
@@ -135,7 +138,11 @@ export const VarianceForm = ({ showForm, varianceSettings }: IVarianceForm) => {
   }
 
   const footerContent = (
-    <Button severity="secondary" onClick={handleFormSubmission}>
+    <Button
+      severity="secondary"
+      onClick={handleFormSubmission}
+      disabled={varianceFileInformation.name.length === 0}
+    >
       Save
     </Button>
   );
@@ -154,6 +161,7 @@ export const VarianceForm = ({ showForm, varianceSettings }: IVarianceForm) => {
               id={item.id}
               remove={removeVarianceOption}
               varianceSettings={varianceSettings}
+              setButtonDisabled={setButtonDisabled}
             />
           );
         })}
@@ -161,8 +169,9 @@ export const VarianceForm = ({ showForm, varianceSettings }: IVarianceForm) => {
           text
           className="hover:!bg-slate-300"
           style={{
-            color:
-              document.documentElement.className == "dark" ? "white" : "black",
+            color: document.documentElement.className.includes("dark")
+              ? "white"
+              : "black",
             marginTop: "10px",
             marginBottom: "20px",
           }}
@@ -186,8 +195,9 @@ export const VarianceForm = ({ showForm, varianceSettings }: IVarianceForm) => {
         <Button
           text
           style={{
-            color:
-              document.documentElement.className == "dark" ? "white" : "black",
+            color: document.documentElement.className.includes("dark")
+              ? "white"
+              : "black",
             marginTop: "10px",
             marginBottom: "20px",
           }}
@@ -207,8 +217,11 @@ export const VarianceForm = ({ showForm, varianceSettings }: IVarianceForm) => {
           {varianceSettings.readOnly ? "Back" : "Cancel"}
         </button>
         <Button
+          className="bg-gray-100 shadow-md hover:bg-gray-400 hover:dark:bg-gray-600 text-black dark:text-white dark:bg-[#313e4f] font-bold py-2 px-4 border border-gray-900 rounded"
           label="Save"
-          disabled={isButtonDisabled || varianceSettings.readOnly}
+          disabled={
+            isButtonDisabled || varianceSettings.readOnly || disabledButton
+          }
           onClick={() => setShowDialog(true)}
         />
       </div>

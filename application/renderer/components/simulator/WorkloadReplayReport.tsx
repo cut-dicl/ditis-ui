@@ -1,12 +1,9 @@
 import { ReportContext } from "../../hooks/useContext-hooks/simulator-report-hook/simulator-report-hook";
 import { IReportObject } from "../../hooks/useContext-hooks/simulator-report-hook/simulator-report-hook-provider";
 import { useContext } from "react";
-import { Chart } from "primereact/chart";
-import { DataTable } from "primereact/datatable";
-import { Column } from "primereact/column";
 import PieWithTableReport from "./PieWithTableReport";
 
-const WorkloadReplayReport = () => {
+const WorkloadReplayReport = (props) => {
   const reportCtx = useContext(ReportContext);
 
   const workloadReplayContent: IReportObject =
@@ -57,12 +54,25 @@ const WorkloadReplayReport = () => {
   });
 
   return (
-    <div>
+    <div className="avoid-page-break">
+      {props.printMode && (
+        <div className="flex justify-center mb-5">
+          <span
+            style={{
+              fontFamily: "Montserrat, sans-serif",
+            }}
+            className="font-bold text-center text-2xl"
+          >
+            Workload Replay
+          </span>
+        </div>
+      )}
       <PieWithTableReport
         content={workloadReplayContent}
         tableData={workloadReplayTableData}
         pieTitle="Workload Request Statistics"
         tableTitle="Workload Request Metrics"
+        printMode={props.printMode}
       />
     </div>
   );

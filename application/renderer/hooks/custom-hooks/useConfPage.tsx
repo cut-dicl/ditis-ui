@@ -1,21 +1,10 @@
-import { useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { ipcRenderer } from "electron";
-import Swal from "sweetalert2";
-
-import classes from "../../components/ConfigForm/confdialog.module.css";
-import {
-  fileEvent,
-  showConfirmationSwal,
-  showSwalWithTimer,
-} from "../../utils/SwalFunctions";
-import { AppController } from "../useContext-hooks/appcontroller-hook/appcontroller-hook";
-import { formTypes } from "../../pages/configurations";
 import { configurationFileTypes } from "../../components/ConfigForm/ConfigurationPage";
 
 export const useConfPage = (setEditMode?, setVarianceEditMode?, toast?) => {
   const [data, setData] = useState([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const app = useContext(AppController);
 
   useEffect(() => {
     getConfigs();
@@ -25,46 +14,27 @@ export const useConfPage = (setEditMode?, setVarianceEditMode?, toast?) => {
   }, []);
 
   const getConfigs = () => {
-    ipcRenderer
-      .invoke("get-configs", {
-        mode: app.mode,
-        address: app.onlineServer.address,
-        auth: app.onlineServer.auth,
-      })
-      .then((result) => {
+    ipcRenderer.invoke("get-configs").then((result) => {
+      if (result.code === 200) {
         console.log(result);
-        if (result.code === 200) {
-          console.log(result);
-          setData(result.content.configurations);
-          setIsLoading(false);
-        } else {
-          Swal.fire({
-            icon: "error",
-            title: result.message,
-            color: document.documentElement.className == "dark" ? "white" : "",
-            background:
-              document.documentElement.className == "dark" ? "#1f2937" : "",
-            showConfirmButton: false,
-            timer: 1500,
-            customClass: {
-              container: classes.zIndexTop,
-            },
-          });
-        }
-      });
+        setData(result.content.configurations);
+        setIsLoading(false);
+      } else {
+        toast.current.show({
+          severity: "error",
+          summary: "Error",
+          detail: "Server did not respond",
+          life: 3000,
+        });
+      }
+    });
   };
 
   const deleteConfigHandler = async (row: any): Promise<void> => {
     const handleDelete = async () => {
-      const { isConfirmed } = await showConfirmationSwal();
-
-      if (isConfirmed) {
         ipcRenderer
           .invoke("delete-config", {
             id: row.id,
-            mode: app.mode,
-            address: app.onlineServer.address,
-            auth: app.onlineServer.auth,
           })
           .then((result) => {
             getConfigs();
@@ -84,25 +54,19 @@ export const useConfPage = (setEditMode?, setVarianceEditMode?, toast?) => {
               });
             }
           });
-      }
     };
 
     await handleDelete();
   };
 
   const uploadConfigHandler = (configType: configurationFileTypes) => {
-    console.log("here");
     ipcRenderer
       .invoke("upload-config", {
-        mode: app.mode,
-        auth: app.onlineServer.auth,
-        address: app.onlineServer.address,
         configType,
       })
       .then((result) => {
-        console.log(result);
         // I need to handle the edge case
-        if (result.code === 200) {
+        if (result.code === 200 && result.message) {
           getConfigs();
           toast.current.show({
             severity: "success",
@@ -110,7 +74,7 @@ export const useConfPage = (setEditMode?, setVarianceEditMode?, toast?) => {
             detail: "Configuration file uploaded successfully",
             life: 3000,
           });
-        } else {
+        } else if (!result || result.code === 500) {
           toast.current.show({
             severity: "error",
             summary: "Error",
@@ -125,10 +89,6 @@ export const useConfPage = (setEditMode?, setVarianceEditMode?, toast?) => {
     ipcRenderer
       .invoke("get-config-by-id", {
         id: row.id,
-        javaPath: app.javaPath,
-        mode: app.mode,
-        address: app.onlineServer.address,
-        auth: app.onlineServer.auth,
       })
       .then((result) => {
         if (result.code === 200) {
@@ -173,9 +133,6 @@ export const useConfPage = (setEditMode?, setVarianceEditMode?, toast?) => {
       .invoke("download-configuration", {
         confName: row.name,
         path: row.path,
-        address: app.onlineServer.address,
-        auth: app.onlineServer.auth,
-        mode: app.mode,
       })
       .then((result) => {
         console.log(result);
@@ -208,9 +165,6 @@ export const useConfPage = (setEditMode?, setVarianceEditMode?, toast?) => {
           ? formData.description
           : "No description added for this configuration file",
         type: formType,
-        address: app.onlineServer.address,
-        auth: app.onlineServer.auth,
-        mode: app.mode,
       })
       .then((result) => {
         getConfigs();

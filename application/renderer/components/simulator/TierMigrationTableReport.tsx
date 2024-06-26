@@ -4,8 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { ReportContext } from "../../hooks/useContext-hooks/simulator-report-hook/simulator-report-hook";
 import { IReportObject } from "../../hooks/useContext-hooks/simulator-report-hook/simulator-report-hook-provider";
 import { useContext } from "react";
+import { Panel } from "primereact/panel";
 
-const TierMigrationTableReport = () => {
+const TierMigrationTableReport = (props) => {
   const canvasCountRef = useRef(null);
   const chartCountRef = useRef(null);
   const canvasBytesRef = useRef(null);
@@ -22,10 +23,29 @@ const TierMigrationTableReport = () => {
       return false;
     }
   );
-  console.log(dataMigrationEmpty);
 
   if (dataMigrationEmpty.every((item) => item === true))
-    return <p>No data was generated for data migration.</p>;
+    return (
+      <>
+        {props.printMode && (
+          <>
+            <div className="flex justify-center mb-5">
+              <span
+                style={{
+                  fontFamily: "Montserrat, sans-serif",
+                }}
+                className="font-bold text-center text-2xl"
+              >
+                Data Migration
+              </span>
+            </div>
+          </>
+        )}
+        <div className="flex justify-center">
+          <h1>No data was generated for data migration.</h1>
+        </div>
+      </>
+    );
 
   //if()
 
@@ -72,8 +92,6 @@ const TierMigrationTableReport = () => {
       Object.entries(tierMigrationContent.rows).forEach((item) => {
         for (let i = 1; i < 6; i += 2) {
           if (!item[1][i]) continue;
-
-          console.log(item[0]);
           chartdata.push({
             from: item[0],
             to: tierMigrationContent.header[i + 1],
@@ -124,29 +142,42 @@ const TierMigrationTableReport = () => {
   };
 
   return (
-    <div>
-      <div style={{ height: "95%", width: "60%" }}>
-        <h1
-          className="text-l font-bold text-black mb-10"
+    <div className="avoid-page-break">
+      {props.printMode && (
+        <div className="flex justify-center mb-5">
+          <span
+            style={{
+              fontFamily: "Montserrat, sans-serif",
+            }}
+            className="font-bold text-center text-2xl"
+          >
+            Data Migration
+          </span>
+        </div>
+      )}
+      <div style={{ height: "95%", width: "60%" }} className="avoid-page-break">
+        <Panel
+          header={"Data Migration from Tier to Tier(Count)"}
           style={{
             fontFamily: "Montserrat, sans-serif",
           }}
         >
-          Data Migration from Tier to Tier(Count)
-        </h1>
-        <canvas ref={canvasCountRef} />
+          <canvas ref={canvasCountRef} />
+        </Panel>
       </div>
 
-      <div style={{ height: "95%", width: "60%", marginTop: "100px" }}>
-        <h1
-          className="text-l font-bold text-black mb-10"
+      <div
+        style={{ height: "95%", width: "60%", marginTop: "100px" }}
+        className="avoid-page-break"
+      >
+        <Panel
+          header={"Data Migration from Tier to Tier(Bytes)"}
           style={{
             fontFamily: "Montserrat, sans-serif",
           }}
         >
-          Data Migration from Tier to Tier(Bytes)
-        </h1>
-        <canvas ref={canvasBytesRef} />
+          <canvas ref={canvasBytesRef} />
+        </Panel>
       </div>
     </div>
   );

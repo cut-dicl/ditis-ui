@@ -19,7 +19,14 @@ function SimulatorRuns() {
   const [simulationsList, setSimulationList] = useState([]);
   const [dialogVisible, setDialogVisible] = useState(false);
   const [analyzeDialogVisible, setAnalyzeDialogVisible] = useState(false);
-  const [trace, setTrace] = useState(-1);
+  const [trace, setTrace] = useState({});
+  const [simInfo, setSimInfo] = useState({
+    id: null,
+    name: "",
+    date: "",
+    configName: "",
+    traceName: "",
+  });
   const controller = useContext(AppController);
   const toast = useRef(null);
   const router = useRouter();
@@ -29,17 +36,55 @@ function SimulatorRuns() {
       toast.current.show({ severity, summary, detail, life: 3000 });
   };
 
-  const openResultDialog = (id: number, name: string) => {
+  const openResultDialog = (
+    id: number,
+    name: string,
+    date: string,
+    config: string,
+    trace: string
+  ) => {
+    setSimInfo({
+      id: id,
+      name: name,
+      date: date,
+      configName: config,
+      traceName: trace,
+    });
     ipcRenderer
       .invoke("fetch-report", {
         id,
-        name,
-        auth: controller.onlineServer.auth,
-        address: controller.onlineServer.address,
-        mode: controller.mode,
       })
       .then((result) => {
-        if (result.code === 200 || !result) {
+        if (result.code === 500) {
+          Swal.fire({
+            icon: "error",
+            title: "Error",
+            text: result.error,
+            showCancelButton: true,
+            confirmButtonText: "Delete Simulation",
+            confirmButtonColor: "#d33",
+            reverseButtons: true,
+            color: document.documentElement.className.includes("dark")
+              ? "white"
+              : "",
+            background: document.documentElement.className.includes("dark")
+              ? "#1f2937"
+              : "",
+            denyButtonText: "Go to Configurations",
+            showDenyButton: true,
+            denyButtonColor: "#3085d6",
+          }).then((result) => {
+            if (result.isDenied) {
+              router.push("/configurations");
+              return;
+            }
+
+            if (result.isConfirmed) {
+              accept({ id, name });
+              return;
+            }
+          });
+        } else if (result.code === 200) {
           reportCtx.handleReportData(result.data);
           setDialogVisible(true);
         } else {
@@ -48,8 +93,8 @@ function SimulatorRuns() {
       });
   };
 
-  const openAnalyzeDialog = (id: any) => {
-    setTrace(id);
+  const openAnalyzeDialog = (row) => {
+    setTrace(row);
     setAnalyzeDialogVisible(true);
   };
 
@@ -67,10 +112,6 @@ function SimulatorRuns() {
     ipcRenderer
       .invoke("delete-simulation", {
         id: row.id,
-        name: row.name,
-        auth: controller.onlineServer.auth,
-        address: controller.onlineServer.address,
-        mode: controller.mode,
       })
       .then((result) => {
         if (!result || result.code === 500) {
@@ -87,14 +128,58 @@ function SimulatorRuns() {
         toast.current.show({
           severity: "success",
           summary: "Success",
-          detail: result.message,
+          detail: `${row.name} deleted successfully`,
           life: 3000,
         });
         reload();
       });
   };
 
+  const reloadSimulation = (id) => {
+    ipcRenderer.invoke("refresh-simulation", {
+      id,
+      simulationMode: "Simulator",
+    });
+    reload();
+  };
+
   const Buttons = (row: any) => {
+    if (row.pid > 0) {
+      showToast("info", "Info", `${row.name} in progress`);
+      return (
+        <div className="flex flex-wrap justify-center">
+          <Button
+            icon="pi pi-refresh"
+            severity="info"
+            text
+            tooltip="Refresh"
+            tooltipOptions={{ position: "left" }}
+            onClick={() => reloadSimulation(row.id)}
+          />
+        </div>
+      );
+    } else if (row.pid === -2)
+      return (
+        <div className="flex justify-evenly">
+          <Button
+            icon="pi pi-exclamation-triangle"
+            severity="danger"
+            text
+            tooltip="View Error"
+            onClick={() =>
+              openResultDialog(
+                row.id,
+                row.name,
+                row.date,
+                row.configuration,
+                row.trace
+              )
+            }
+            tooltipOptions={{ position: "left" }}
+          />
+        </div>
+      );
+
     return (
       <div className="flex justify-between">
         <Button
@@ -102,14 +187,22 @@ function SimulatorRuns() {
           severity="info"
           text
           tooltip="Analyze"
-          onClick={() => openResultDialog(row.id, row.name)}
+          onClick={() =>
+            openResultDialog(
+              row.id,
+              row.name,
+              row.date,
+              row.configuration,
+              row.trace
+            )
+          }
         />
         <Button
           icon="pi pi-search"
           severity="help"
           text
           tooltip="Analyze Output Trace"
-          onClick={() => openAnalyzeDialog(row.id)}
+          onClick={() => openAnalyzeDialog(row)}
         />
         <Button
           icon="pi pi-trash"
@@ -134,6 +227,7 @@ function SimulatorRuns() {
   } simulator runs stored.`;
 
   useLayoutEffect(() => {
+    reload();
     if (controller.javaPath === "" && controller.mode === "Local") {
       if (controller.appLoaded === true)
         Swal.fire({
@@ -144,9 +238,12 @@ function SimulatorRuns() {
           cancelButtonText: "Cancel",
           confirmButtonText: "Configure",
           reverseButtons: true,
-          color: document.documentElement.className == "dark" ? "white" : "",
-          background:
-            document.documentElement.className == "dark" ? "#1f2937" : "",
+          color: document.documentElement.className.includes("dark")
+            ? "white"
+            : "",
+          background: document.documentElement.className.includes("dark")
+            ? "#1f2937"
+            : "",
         }).then((result) => {
           if (result.isConfirmed) {
             router.push("/preferences");
@@ -164,51 +261,40 @@ function SimulatorRuns() {
         cancelButtonText: "Cancel",
         confirmButtonText: "Configure",
         reverseButtons: true,
-        color: document.documentElement.className == "dark" ? "white" : "",
-        background:
-          document.documentElement.className == "dark" ? "#1f2937" : "",
+        color: document.documentElement.className.includes("dark")
+          ? "white"
+          : "",
+        background: document.documentElement.className.includes("dark")
+          ? "#1f2937"
+          : "",
       }).then((result) => {
         if (result.isConfirmed) {
           router.push("/preferences");
         }
       });
-    } else {
-      reload();
     }
   }, []);
 
   const reload = () => {
-    ipcRenderer
-      .invoke("fetch-simulations-list", {
-        auth: controller.onlineServer.auth,
-        mode: controller.mode,
-        address: controller.onlineServer.address,
-      })
-      .then((result) => {
-        console.log(result);
-        if (result.code === 500) {
-          toast.current.show({
-            severity: "error",
-            summary: "Error",
-            detail: result.error
-              ? result.error
-              : "Error fetching simulation list",
-            life: 3000,
-          });
-          return;
-        }
-        setSimulationList(result.data.simulations);
-      });
+    ipcRenderer.invoke("fetch-simulations-list").then((result) => {
+      if (result.code === 500) {
+        toast.current.show({
+          severity: "error",
+          summary: "Error",
+          detail: "Server did not respond",
+          life: 3000,
+        });
+        return;
+      }
+      setSimulationList(result.data.simulations);
+    });
   };
 
   const handleMLFilesDownload = (row) => {
     ipcRenderer
       .invoke("zip-files", {
-        sim: "simulations",
+        sim: "simulator",
         type: "ML files",
-        auth: controller.onlineServer.auth,
-        address: controller.onlineServer.address,
-        mode: controller.mode,
         id: row.id,
         name: row.name,
       })
@@ -218,6 +304,13 @@ function SimulatorRuns() {
             severity: "error",
             summary: "Error",
             detail: result.error ? result.error : "Error downloading ML files",
+            life: 3000,
+          });
+        } else if (result.code === 404) {
+          toast.current.show({
+            severity: "error",
+            summary: "Error",
+            detail: "No ML files found/generated",
             life: 3000,
           });
         } else if (result.code === 200) {
@@ -291,20 +384,23 @@ function SimulatorRuns() {
         </div>
       </div>
       <ReportDialog
+        simInfo={simInfo}
         showReportDialog={dialogVisible}
         setShowReportDialog={setDialogVisible}
         dialogMode={true}
       />
-      <DialogAnalyzeTrace
-        analyzeDialogVisible={analyzeDialogVisible}
-        handleClose={() => {
-          setAnalyzeDialogVisible(false);
-          setTrace(-1);
-        }}
-        type="simulator"
-        id={trace}
-        showToast={showToast}
-      />
+      {analyzeDialogVisible && (
+        <DialogAnalyzeTrace
+          analyzeDialogVisible={analyzeDialogVisible}
+          handleClose={() => {
+            setAnalyzeDialogVisible(false);
+            setTrace({});
+          }}
+          type="simulator"
+          trace={trace}
+          showToast={showToast}
+        />
+      )}
     </div>
   );
 }

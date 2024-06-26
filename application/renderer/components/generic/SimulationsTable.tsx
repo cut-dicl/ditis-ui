@@ -20,7 +20,10 @@ interface ISimulationsTableProps {
   openResultDialog: (id: number, name?: string) => void;
   clearSimulation: (id: number, date?: number) => void;
   deleteSimulation: (id: number, name: string) => void;
-  showToast: (severity:string,summary:string,detail:string) => void;
+  showToast: (severity: string, summary: string, detail: string) => void;
+  setSimulationSelected?: Dispatch<
+    SetStateAction<{ id: number; name: string }>
+  >;
 }
 
 export default function SimulationsTable({
@@ -30,18 +33,19 @@ export default function SimulationsTable({
   dialogVisible,
   setDialogVisible,
   simulationSelected,
+  setSimulationSelected,
   openResultDialog,
   clearSimulation,
   deleteSimulation,
-  showToast
+  showToast,
 }: ISimulationsTableProps) {
   const controller = useContext(AppController);
   const [analyzeDialogVisible, setAnalyzeDialogVisible] = useState(false);
-  const [trace, setTrace] = useState("");
+  const [trace, setTrace] = useState({});
   const type = simulationMode === "Optimizer" ? "optimization" : "simulation";
 
-  const handleAnalyzeTrace = (id) => {
-    setTrace(id);
+  const handleAnalyzeTrace = (row) => {
+    setTrace(row);
     setAnalyzeDialogVisible(true);
   };
 
@@ -68,7 +72,7 @@ export default function SimulationsTable({
             severity="secondary"
             text
             tooltip="Remove"
-            onClick={() => clearSimulation(row.id, row.date)}
+            onClick={() => clearSimulation(row.id)}
           />
         </div>
       );
@@ -105,6 +109,30 @@ export default function SimulationsTable({
       );
 
     if (
+      row.pid === -2 &&
+      row.status === "Error" &&
+      simulationMode === "Optimizer"
+    )
+      return (
+        <div className="flex justify-evenly">
+          <Button
+            icon="pi pi-exclamation-triangle"
+            severity="danger"
+            text
+            tooltip="View Error"
+            onClick={() => openResultDialog(row.id, row.name)}
+          />
+          <Button
+            icon="pi pi-eye-slash"
+            severity="secondary"
+            text
+            tooltip="Clear"
+            onClick={() => clearSimulation(row.id)}
+          />
+        </div>
+      );
+
+    if (
       row.pid === "N/A" &&
       row.status === "Finished" &&
       simulationMode === "Simulator"
@@ -122,8 +150,8 @@ export default function SimulationsTable({
             icon="pi pi-search"
             severity="info"
             text
-            tooltip="Analyse output trace"
-            onClick={() => handleAnalyzeTrace(row.id)}
+            tooltip="Analyze output trace"
+            onClick={() => handleAnalyzeTrace(row)}
           />
           <Button
             icon="pi pi-eye-slash"
@@ -136,8 +164,32 @@ export default function SimulationsTable({
             icon="pi pi-trash"
             severity="danger"
             text
+            tooltipOptions={{ position: "left" }}
             tooltip="Delete"
             onClick={(e) => confirm(e, row)}
+          />
+        </div>
+      );
+    if (
+      row.pid === -2 &&
+      row.status === "Error" &&
+      simulationMode === "Simulator"
+    )
+      return (
+        <div className="flex justify-evenly">
+          <Button
+            icon="pi pi-exclamation-triangle"
+            severity="danger"
+            text
+            tooltip="View Error"
+            onClick={() => openResultDialog(row.id, row.name)}
+          />
+          <Button
+            icon="pi pi-eye-slash"
+            severity="secondary"
+            text
+            tooltip="Clear"
+            onClick={() => clearSimulation(row.id)}
           />
         </div>
       );
@@ -164,7 +216,9 @@ export default function SimulationsTable({
 
   const header = (
     <div className="flex flex-wrap align-items-center justify-content-between gap-2">
-      <span className="text-xl text-900 font-bold">Running {type.charAt(0).toUpperCase() + type.slice(1)}s</span>
+      <span className="text-xl text-900 font-bold">
+        Running {type.charAt(0).toUpperCase() + type.slice(1)}s
+      </span>
     </div>
   );
 
@@ -202,29 +256,34 @@ export default function SimulationsTable({
       {simulationMode === "Optimizer" && simulationSelected.id !== -1 && (
         <OptimizerResults
           opt={simulationSelected}
+          setOptimizationSelected={setSimulationSelected}
           dialogVisible={dialogVisible}
           setDialogVisible={setDialogVisible}
+          deleteOptimization={accept}
         />
       )}
       {simulationMode === "Simulator" && simulationSelected.id !== -1 && (
         <>
           <ReportDialog
+            simInfo={simulationSelected.id}
             showReportDialog={dialogVisible}
             setShowReportDialog={setDialogVisible}
             dialogMode={true}
           />
         </>
       )}
-      <DialogAnalyzeTrace
-        analyzeDialogVisible={analyzeDialogVisible}
-        handleClose={() => {
-          setAnalyzeDialogVisible(false);
-          setTrace("");
-        }}
-        type="simulator"
-        id={trace}
-        showToast={showToast}
-      />
+      {analyzeDialogVisible && (
+        <DialogAnalyzeTrace
+          analyzeDialogVisible={analyzeDialogVisible}
+          handleClose={() => {
+            setAnalyzeDialogVisible(false);
+            setTrace({});
+          }}
+          type="simulator"
+          trace={trace}
+          showToast={showToast}
+        />
+      )}
     </div>
   );
 }

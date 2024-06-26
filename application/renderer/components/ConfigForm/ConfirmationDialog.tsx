@@ -7,7 +7,6 @@ import { ipcRenderer } from "electron";
 import Swal from "sweetalert2";
 
 import { ConfFormContext } from "../../hooks/useContext-hooks/conf-form-hook/conf-form-hook";
-import { NextPreviousButtonContext } from "../../hooks/useContext-hooks/next-previous-buttons-hook/next-previous-buttons-hook";
 import classes from "./confdialog.module.css";
 import { IConfigurationFormProps } from "./ConfigurationForm";
 import { fileEvent, showSwalWithTimer } from "../../utils/SwalFunctions";
@@ -32,22 +31,25 @@ export const ConfirmationDialog = (props: IConfigurationDialogProps) => {
   const confFormCtx = useContext(ConfFormContext);
   const app = useContext(AppController);
 
-  const handleConfigFileCreation = () => {
+  const handleConfigFileCreation = (event) => {
     ipcRenderer
       .invoke("create-config-file", {
         confObject: confFormCtx.configurationObject,
         confName: name,
         description,
         formType: formType === "simulator" ? "Storage" : "Optimizer",
-        mode: app.mode,
         type: "simulator",
-        auth: app.onlineServer.auth,
-        address: app.onlineServer.address,
       })
       .then((result) => {
-        console.log(result);
         handleSwalEvents(result);
       });
+  };
+
+  const handleKeyPress = (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      document.getElementById("saveButton").click();
+    }
   };
 
   const handleConfigFileUpdate = () => {
@@ -57,10 +59,7 @@ export const ConfirmationDialog = (props: IConfigurationDialogProps) => {
         confName: name,
         description,
         confId,
-        appMode: app.mode,
         type: "simulator",
-        auth: app.onlineServer.auth,
-        address: app.onlineServer.address,
       })
       .then((result) => {
         handleSwalEvents(result);
@@ -74,17 +73,20 @@ export const ConfirmationDialog = (props: IConfigurationDialogProps) => {
     setShowDialog(true);
   };
 
-
   const handleSwalEvents = (result) => {
+    console.log(document.documentElement.className);
     if (result.code === 200) {
       Swal.fire({
         icon: "success",
         title: result.message,
         timer: 1000,
-        color: document.documentElement.className == "dark" ? "white" : "",
+        color: document.documentElement.className.includes("dark")
+          ? "white"
+          : "",
         target: document.getElementById("save-config-dialog"),
-        background:
-          document.documentElement.className == "dark" ? "#1f2937" : "",
+        background: document.documentElement.className.includes("dark")
+          ? "#1f2937"
+          : "",
         showConfirmButton: false,
       }).then(() => {
         confFormCtx.handleConfTabIndex(formType === "simulator" ? 0 : 1);
@@ -95,10 +97,13 @@ export const ConfirmationDialog = (props: IConfigurationDialogProps) => {
       Swal.fire({
         icon: "error",
         title: result.message,
-        color: document.documentElement.className == "dark" ? "white" : "",
+        color: document.documentElement.className.includes("dark")
+          ? "white"
+          : "",
         target: document.getElementById("save-config-dialog"),
-        background:
-          document.documentElement.className == "dark" ? "#1f2937" : "",
+        background: document.documentElement.className.includes("dark")
+          ? "#1f2937"
+          : "",
         showConfirmButton: true,
       });
     }
@@ -109,6 +114,8 @@ export const ConfirmationDialog = (props: IConfigurationDialogProps) => {
       severity="secondary"
       onClick={mode ? handleConfigFileCreation : handleConfigFileUpdate}
       disabled={name.length === 0}
+      id="saveButton"
+      className="bg-gray-100 shadow-md hover:bg-gray-400 hover:dark:bg-gray-600 text-black dark:text-white dark:bg-[#313e4f] font-bold py-2 px-4 border border-gray-900 rounded"
     >
       {mode ? "Create configuration file" : "Save Changes"}
     </Button>
@@ -117,10 +124,10 @@ export const ConfirmationDialog = (props: IConfigurationDialogProps) => {
   return (
     <>
       <button
-        className={`shadow-md text-black font-bold py-2 px-4 border rounded border-gray-900 ${
+        className={`bg-gray-100 shadow-md hover:bg-gray-400 hover:dark:bg-gray-600 text-black dark:text-white dark:bg-[#313e4f] font-bold py-2 px-4 border border-gray-900 rounded ${
           readOnly && !optimizerView
-            ? "bg-gray-800 text-gray-500 cursor-not-allowed"
-            : "bg-gray-100 hover:bg-gray-400 hover:dark:bg-gray-600"
+            ? " text-gray-500 cursor-not-allowed"
+            : " hover:bg-gray-400 hover:dark:bg-gray-600"
         }`}
         onClick={() =>
           mode === 1 ? setShowDialog(true) : handleUpdatedDialogContents()
@@ -145,6 +152,7 @@ export const ConfirmationDialog = (props: IConfigurationDialogProps) => {
           <InputText
             onChange={(event) => setName(event.target.value)}
             value={name}
+            onKeyDown={handleKeyPress}
           />
         </div>
         <div className="flex flex-col mt-5 space-y-2">

@@ -1,8 +1,14 @@
 import { Chart } from "primereact/chart";
 import colorPalette from "../generic/colorPallete";
 import { convertUnderlineToTitleCase } from "../../utils/convertStringFunctions";
+import { useTheme } from "next-themes";
 
-const BlockSplitOperationsBytesTime = ({ reportContent, blockSelection }) => {
+const BlockSplitOperationsBytesTime = ({
+  reportContent,
+  blockSelection,
+  printMode,
+}) => {
+  const theme = useTheme();
   const operations = Object.entries(reportContent.rows).filter((item) => {
     if (
       item.toString().toLocaleLowerCase().includes("operations") &&
@@ -39,12 +45,12 @@ const BlockSplitOperationsBytesTime = ({ reportContent, blockSelection }) => {
   const options = {
     responsive: true,
     maintainAspectRatio: false,
-    aspectRatio: 0.8,
     plugins: {
       legend: {
-        position: "right",
+        position: "bottom",
         labels: {
           usePointStyle: true,
+          color: theme.theme === "dark" ? "lightgrey" : "black",
         },
       },
     },
@@ -69,114 +75,240 @@ const BlockSplitOperationsBytesTime = ({ reportContent, blockSelection }) => {
     .every((element) => element === 0);
 
   return (
-    <div
-      className="flex justify-between"
-    >
-      <div style={{ width: "33%" }}>
-        {operationsZero ? (
-          <p
-            style={{
-              fontFamily: "Montserrat, sans-serif",
-            }}
-          >
-            No Results for Operations
-          </p>
-        ) : (
-          <div
-            style={{
-              background: "#f0f0f0",
-              borderRadius: "8px",
-              padding: "16px",
-              boxShadow: "0 4px 10px rgba(0, 0, 0, 0.3)",
-              margin: "0 10px 0 10px",
-            }}
-          >
-            <h1
-              className="text-2xl font-bold text-black"
-              style={{
-                fontFamily: "Montserrat, sans-serif",
-              }}
-            >
-              Operations
-            </h1>
-            <Chart
-              type="pie"
-              data={tierStateHandler(operations, blockSelection)}
-              options={options}
-            />
+    <div className="avoid-page-break w-full">
+      {!printMode && (
+        <div className="flex justify-between w-full">
+          <div style={{ width: "33%" }}>
+            {operationsZero ? (
+              <p
+                style={{
+                  fontFamily: "Montserrat, sans-serif",
+                }}
+              >
+                No Results for Operations
+              </p>
+            ) : (
+              <div
+                style={{
+                  borderRadius: "8px",
+                  padding: "10px",
+                  borderColor: "rgba(0, 0, 0, 0.1)",
+                  borderWidth: "2px",
+                }}
+              >
+                <h1
+                  className="text-2xl font-bold"
+                  style={{
+                    fontFamily: "Montserrat, sans-serif",
+                  }}
+                >
+                  Operations
+                </h1>
+                <Chart
+                  type="pie"
+                  className="big-vertical-bar-chart"
+                  data={tierStateHandler(operations, blockSelection)}
+                  options={options}
+                />
+              </div>
+            )}
           </div>
-        )}
-      </div>
-      <div style={{ width: "33%" }}>
-        {bytesZero ? (
-          <p
-            style={{
-              fontFamily: "Montserrat, sans-serif",
-            }}
-          >
-            No results for Bytes
-          </p>
-        ) : (
-          <div
-            style={{
-              background: "#f0f0f0",
-              borderRadius: "8px",
-              padding: "16px",
-              boxShadow: "0 4px 10px rgba(0, 0, 0, 0.3)",
-              margin: "0 10px 0 10px",
-            }}
-          >
-            <h1
-              className="text-2xl font-bold text-black"
-              style={{
-                fontFamily: "Montserrat, sans-serif",
-              }}
-            >
-              Bytes
-            </h1>
-            <Chart
-              type="pie"
-              data={tierStateHandler(bytes, blockSelection)}
-              options={options}
-            />
+          <div style={{ width: "33%" }}>
+            {bytesZero ? (
+              <p
+                style={{
+                  fontFamily: "Montserrat, sans-serif",
+                }}
+              >
+                No results for Bytes
+              </p>
+            ) : (
+              <div
+                style={{
+                  borderRadius: "8px",
+                  padding: "10px",
+                  borderColor: "rgba(0, 0, 0, 0.1)",
+                  borderWidth: "2px",
+                }}
+              >
+                <h1
+                  className="text-2xl font-bold"
+                  style={{
+                    fontFamily: "Montserrat, sans-serif",
+                  }}
+                >
+                  Bytes
+                </h1>
+                <Chart
+                  type="pie"
+                  className="big-vertical-bar-chart"
+                  data={tierStateHandler(bytes, blockSelection)}
+                  options={options}
+                />
+              </div>
+            )}
           </div>
-        )}
-      </div>
-      <div style={{ width: "33%" }}>
-        {timesZero ? (
-          <p
-            style={{
-              fontFamily: "Montserrat, sans-serif",
-            }}
-          >
-            No Results for Time
-          </p>
-        ) : (
-          <div
-            style={{
-              background: "#f0f0f0",
-              borderRadius: "8px",
-              padding: "16px",
-              boxShadow: "0 4px 10px rgba(0, 0, 0, 0.3)",
-              margin: "0 10px 0 10px",
-            }}
-          >
-            <h1
-              className="text-2xl font-bold text-black"
-              style={{
-                fontFamily: "Montserrat, sans-serif",
-              }}
-            >
-              Time
-            </h1>
-            <Chart
-              type="pie"
-              data={tierStateHandler(time, blockSelection)}
-              options={options}
-            />
+          <div style={{ width: "33%" }}>
+            {timesZero ? (
+              <p
+                style={{
+                  fontFamily: "Montserrat, sans-serif",
+                }}
+              >
+                No Results for Time
+              </p>
+            ) : (
+              <div
+                style={{
+                  borderRadius: "8px",
+                  padding: "10px",
+                  borderColor: "rgba(0, 0, 0, 0.1)",
+                  borderWidth: "2px",
+                }}
+              >
+                <h1
+                  className="text-2xl font-bold"
+                  style={{
+                    fontFamily: "Montserrat, sans-serif",
+                  }}
+                >
+                  Time
+                </h1>
+                <Chart
+                  type="pie"
+                  className="big-vertical-bar-chart"
+                  data={tierStateHandler(time, blockSelection)}
+                  options={options}
+                />
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
+      {printMode && (
+        <div className="flex justify-center flex-wrap gap-5">
+          <div
+            style={{ width: operationsZero ? "25%" : "48%" }}
+            className="avoid-page-break"
+          >
+            {operationsZero ? (
+              <p
+                style={{
+                  fontFamily: "Montserrat, sans-serif",
+                }}
+              >
+                No Results for Operations
+              </p>
+            ) : (
+              <div
+                style={{
+                  borderRadius: "8px",
+                  padding: "10px",
+                  borderColor: "rgba(0, 0, 0, 0.1)",
+                  borderWidth: "2px",
+                }}
+              >
+                <h1
+                  className="text-2xl font-bold"
+                  style={{
+                    fontFamily: "Montserrat, sans-serif",
+                  }}
+                >
+                  Operations
+                </h1>
+                <div className="flex justify-center">
+                  <Chart
+                    type="pie"
+                    className=""
+                    data={tierStateHandler(operations, blockSelection)}
+                    options={options}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+          <div
+            style={{ width: bytesZero ? "25%" : "48%" }}
+            className="avoid-page-break"
+          >
+            {bytesZero ? (
+              <p
+                style={{
+                  fontFamily: "Montserrat, sans-serif",
+                }}
+              >
+                No results for Bytes
+              </p>
+            ) : (
+              <div
+                style={{
+                  borderRadius: "8px",
+                  padding: "10px",
+                  borderColor: "rgba(0, 0, 0, 0.1)",
+                  borderWidth: "2px",
+                }}
+              >
+                <h1
+                  className="text-2xl font-bold"
+                  style={{
+                    fontFamily: "Montserrat, sans-serif",
+                  }}
+                >
+                  Bytes
+                </h1>
+                <div className="flex justify-center">
+                  <Chart
+                    type="pie"
+                    className=""
+                    data={tierStateHandler(bytes, blockSelection)}
+                    options={options}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+          <div
+            style={{ width: timesZero ? "25%" : "48%" }}
+            className="avoid-page-break"
+          >
+            {timesZero ? (
+              <p
+                style={{
+                  fontFamily: "Montserrat, sans-serif",
+                }}
+              >
+                No Results for Time
+              </p>
+            ) : (
+              <div
+                style={{
+                  borderRadius: "8px",
+                  padding: "10px",
+                  borderColor: "rgba(0, 0, 0, 0.1)",
+                  borderWidth: "2px",
+                }}
+              >
+                <h1
+                  className="text-2xl font-bold"
+                  style={{
+                    fontFamily: "Montserrat, sans-serif",
+                  }}
+                >
+                  Time
+                </h1>
+                <div className="flex justify-center">
+                  <Chart
+                    type="pie"
+                    className=""
+                    data={tierStateHandler(time, blockSelection)}
+                    options={options}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

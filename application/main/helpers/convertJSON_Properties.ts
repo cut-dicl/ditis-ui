@@ -69,12 +69,16 @@ export async function convertProperties_Json_Variance(
 ): Promise<any> {
   const allProperties: string[] = protpertiesString.toString().split("\n");
   const test = [];
+  const regex = /[\!@#\$%\^\&*\)\(+=_-]/
 
   allProperties.forEach((propertySetting) => {
     const keyValue = propertySetting.split("=");
-    if (keyValue[0] !== "" && keyValue[1] !== "")
-      test.push({ key: keyValue[0], value: keyValue[1] });
+    if(!regex.test(keyValue[0])){
+      if (keyValue[0] !== "" && keyValue[1] !== "")
+        test.push({ key: keyValue[0].trim(), value: keyValue[1] });
+    }
   });
 
+  console.log(test)
   return test;
 }

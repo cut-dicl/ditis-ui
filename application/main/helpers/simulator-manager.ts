@@ -2,11 +2,22 @@ import { app } from "electron";
 import { runSimulator } from "../service/simulator";
 import axios from "axios";
 import { getTraceExtension } from "./trace-manager";
+import { getPreference } from "../api/preferences";
 
 const fs = require("fs");
 
-export async function checkOnlineSimulator(address,id,auth){
-  let res = await axios.post(`${address}/api/simulator/check`, { id, auth }).then((res) => {
+export async function checkOnlineSimulator() {
+  let {address} = getPreference("onlineServer");
+
+  let res = await axios.post(`${address}/api/simulator/running`).then((res) => {
+      return res;
+  });
+  return { code: 200, data: res.data};
+}
+
+export async function refreshOnlineSimulator(id){
+  let {address} = getPreference("onlineServer");
+  let res = await axios.post(`${address}/api/simulator/check`, { id }).then((res) => {
     return res;
 });
 return { code: 200, data: res.data};
@@ -32,9 +43,16 @@ export async function refreshLocalSimulator(id) {
       if (process.kill(obj.pid, 0))
         return { code: 200, data: { id: id, pid: obj.pid, date: obj.date } };
     } catch (err) {
-      obj.pid = 0;
+      let pid;
+      if (fs.existsSync(path + "/" + id + "/error.json"))
+        pid = -2;
+      else if (!fs.existsSync(path + "/" + id + `/report_${id}.json`))
+        pid = -2;
+      else
+          pid = 0;
+      obj.pid = pid;
       fs.writeFileSync(path + "/simulations.json", JSON.stringify(simulations));
-      return { code: 200, data: { id: id, pid: 0, date: obj.date } };
+      return { code: 200, data: { id: id, pid, date: obj.date } };
     }
   }
   return;
@@ -85,31 +103,31 @@ export async function deleteLocalSimulation(id) {
 
 export async function runOnlineSimulator(arg) {
   try {
-    console.log(arg);
-    let res = await axios
-      .post(arg.serverAddress + "/api/simulator/run", {
+    let mode = getPreference("simulationPreference");
+    let {address} = getPreference("onlineServer");
+    let response
+     await axios
+      .post(address + "/api/simulator/run", {
         params: {
           trace: arg.trace,
           configuration: arg.configuration,
           maxEvents: arg.maxEvents,
           areMLFilesEnabled: arg.areMLFilesEnabled,
           name: arg.name,
-          auth: arg.auth,
           maxMemory: arg.maxMemory,
         },
       })
       .then((res) => {
-        return res;
+        response = res
       });
-    return { code: 200, data: res.data };
+    return { code: 200, data: response.data };
   } catch (err) {
-    console.log(err.response);
-    return { code: 500, data: -1, error: err.response.data.message };
+    console.log(err.response.status === 401)
+    return { code: 500, data: -1, error: err.response.status === 401 ? {message:"Unauthorized Access"}: err.response.data };
   }
 }
 
 interface localSimulatorProps {
-  javaPath: string;
   configuration: string;
   trace: string;
   maxEvents: number;
@@ -136,10 +154,10 @@ export async function runLocalSimulator(arg: localSimulatorProps) {
     fs.mkdirSync(path);
   }
 
-  console.log(arg.javaPath);
+  const javaPath = getPreference("javaPath");
   const configuration =
     arg.configuration === "Default Storage Configuration"
-      ? arg.javaPath.replace("ditis-service-2.0-SNAPSHOT.jar", "") +
+      ? javaPath.replace("ditis-service-2.0-SNAPSHOT.jar", "") +
         "conf/storage.properties"
       : app.getPath("userData") +
         `/configurations/${arg.configuration}.properties`;
@@ -151,7 +169,7 @@ export async function runLocalSimulator(arg: localSimulatorProps) {
     path,
     arg.maxEvents,
     arg.areMLFilesEnabled,
-    arg.javaPath,
+    javaPath,
     arg.maxMemory
   );
   if (

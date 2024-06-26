@@ -1,4 +1,4 @@
-import React, { createContext, useEffect, useLayoutEffect, useState } from 'react';
+import React, { createContext, use, useEffect, useLayoutEffect, useState } from 'react';
 import {useTheme} from "next-themes";
 import { ipcRenderer } from 'electron';
 
@@ -14,6 +14,7 @@ export const AppController = createContext({
         address: "",
         auth: "",
     },
+    username: "",
     appLoaded: false,
     debugEnabled: false,
     setMode: (mode:string) => {},
@@ -21,7 +22,7 @@ export const AppController = createContext({
     setSimulationPreference: (simulationPreference:string) => {},
     setJavaPath: (javaPath:string) => {},
     setIsSimulatorInstalled: (isSimulatorInstalled:boolean) => {},
-    setOnlineServer: (onlineServer: object) => { },
+    setOnlineServer: (onlineServer: string) => { },
     setDebugEnabled: (debugEnabled: boolean) => {},
 });
 
@@ -39,6 +40,7 @@ export const AppControllerProvider = (props) =>{
     });
     const [appLoaded, setAppLoaded] = useState(false);
     const [debugEnabled, setDebugEnabled] = useState(false);
+    const [username, setUsername] = useState("");
 
 
     const handleSimulationPreference = (newPreference) => {
@@ -86,8 +88,39 @@ export const AppControllerProvider = (props) =>{
         setTheme(appTheme === "dark" ? "dark" : "light");
     }, [appTheme]);
 
+
+    const editOnlineServer = (newServer) => {
+        if (newServer === "") {
+            setOnlineServer({
+                serverName: "",
+                address: "",
+                auth: "",
+            });
+            setUsername("");
+            return;
+        } 
+        
+        ipcRenderer.invoke('get-server', { serverName: newServer }).then((result) => {
+            console.log(result);
+            if (result === undefined) return;
+            if (result.code == 500) {
+                return;
+            }
+
+            ipcRenderer.invoke('edit-preferences-file', { key: "onlineServer", value: result.data });
+            setOnlineServer(result.data);
+        });
+    }
+
+
     useEffect(() => {
-        ipcRenderer.invoke('edit-preferences-file', {key: "onlineServer", value: onlineServer});
+        ipcRenderer.invoke('get-server', { serverName: onlineServer.serverName }).then((result) => {
+            if (result === undefined) return;
+            if (result.code == 500) {
+                return;
+            }
+            setUsername(result.data.username);
+        });
     }, [onlineServer]);
 
     return (
@@ -95,7 +128,7 @@ export const AppControllerProvider = (props) =>{
              setAppTheme: setAppTheme, simulationPreference: simulationPreference, isSimulatorInstalled: isSimulatorInstalled,
              javaPath: javaPath, onlineServer: onlineServer, setJavaPath: setJavaPath,
             setSimulationPreference: setSimulationPreference, setIsSimulatorInstalled: setIsSimulatorInstalled,
-            setOnlineServer: setOnlineServer,appLoaded: appLoaded, debugEnabled: debugEnabled, setDebugEnabled: setDebugEnabled
+            setOnlineServer: editOnlineServer,appLoaded: appLoaded, debugEnabled: debugEnabled, setDebugEnabled: setDebugEnabled, username: username
         }}>
             {props.children}
         </AppController.Provider>

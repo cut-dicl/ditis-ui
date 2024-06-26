@@ -24,7 +24,7 @@ export default function ThemeManager() {
         <InputSwitch checked={theme == "dark"} onChange={(e) => handleTheme(e.value ? "dark" : "light")} />
       
       </div>
-      <small>Enables or disables the dark mode theme</small>
+      <small className="italic">Enables or disables the dark mode theme</small>
     </div>
   );
 }

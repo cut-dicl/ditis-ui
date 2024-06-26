@@ -1,22 +1,42 @@
 import { DataTable } from 'primereact/datatable'
-import React, { use } from 'react'
+import React from 'react'
 import { convertDotToTitleCase, convertUnderlineToTitleCase } from '../../utils/convertStringFunctions'
 import { Column } from 'primereact/column'
 import { InputSwitch } from 'primereact/inputswitch'
 import { MultiSelect } from 'primereact/multiselect'
 import { useTheme } from 'next-themes'
+import { Button } from 'primereact/button'
+import { ipcRenderer } from 'electron'
+import { AppController } from '../../hooks/useContext-hooks/appcontroller-hook/appcontroller-hook'
 
-export default function ResultsTable({ data, columns }) {
+export default function ResultsTable({ data, columns, optID, showToast }) {
   const [selectedColumns, setSelectedColumns] = React.useState(columns);
   const [frozenColumns, setFrozenColumns] = React.useState(["SimulationID"]);
   const [extendedTable, setExtendedTable] = React.useState(true);
   const { theme } = useTheme();
+  const controller = React.useContext(AppController);
+
+
+  const downloadCSV = () => {
+    ipcRenderer.invoke('download-optimizer-csv', {
+      optID
+    }).then((res) => {
+      console.log(res);
+      if (!res || res.code === 500)
+        showToast('error', 'Error', res.error);
+      else if (res.code === 200)
+        showToast('success', 'Success', 'File downloaded');
+    });
+  }
 
     
     const tableHeader = () => {
         return (
           <div className="flex flex-row justify-between items-center">
-            Final Results
+            <div className='flex items-center'>
+              Final Results
+              <Button icon="pi pi-download" tooltip='Download as CSV' text onClick={() => downloadCSV()}/>
+              </div>
             <div className='flex flex-row'>
               <div>Columns to Display:
                 <MultiSelect className={"w-[300px] ml-2 " + (selectedColumns.length === 0 ? "p-invalid" : "")}

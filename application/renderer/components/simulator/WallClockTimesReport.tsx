@@ -4,9 +4,11 @@ import { IReportObject } from "../../hooks/useContext-hooks/simulator-report-hoo
 import { Chart } from "primereact/chart";
 import BorderHeader from "../../UI/BorderHeader";
 import { Panel } from "primereact/panel";
+import { useTheme } from "next-themes";
 
-const WallClockTimesReport = () => {
+const WallClockTimesReport = (props) => {
   const reportCtx = useContext(ReportContext);
+  const theme = useTheme();
 
   const wallClockTimesReportContent: IReportObject =
     reportCtx.reportData["Wall Clock Runtimes"];
@@ -55,6 +57,10 @@ const WallClockTimesReport = () => {
         title: {
           display: true,
           text: "Time (ms)",
+          color: theme.theme === "dark" ? "lightgrey" : "black",
+        },
+        ticks: {
+          color: theme.theme === "dark" ? "lightgrey" : "black",
         },
       },
       y: {
@@ -62,6 +68,17 @@ const WallClockTimesReport = () => {
         title: {
           display: true,
           text: "Components",
+          color: theme.theme === "dark" ? "lightgrey" : "black",
+        },
+        ticks: {
+          color: theme.theme === "dark" ? "lightgrey" : "black",
+        },
+      },
+    },
+    plugins: {
+      legend: {
+        labels: {
+          color: theme.theme === "dark" ? "lightgrey" : "black",
         },
       },
     },
@@ -69,9 +86,34 @@ const WallClockTimesReport = () => {
 
   return (
     <>
-      <Panel header={"Execution Times"}>
-        <Chart type="bar" data={countData} options={chartOptions} />
-      </Panel>
+      {!props.printMode && (
+        <Panel header={"Execution Times"}>
+          <Chart type="bar" data={countData} options={chartOptions} />
+        </Panel>
+      )}
+      {props.printMode && (
+        <div className="w-full">
+          <div className="avoid-page-break w-full">
+            <div className="flex justify-center mb-5">
+              <span
+                style={{
+                  fontFamily: "Montserrat, sans-serif",
+                }}
+                className="font-bold text-center text-2xl"
+              >
+                Wall Clock Runtimes
+              </span>
+            </div>
+            <Chart
+              type="bar"
+              data={countData}
+              options={chartOptions}
+              className="big-vertical-bar-chart"
+            />
+          </div>
+          <div className="page-break"></div>
+        </div>
+      )}
     </>
   );
 };

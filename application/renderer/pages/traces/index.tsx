@@ -2,7 +2,6 @@ import React, { useContext, useEffect, useRef, useState } from "react";
 import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
 import { Button } from "primereact/button";
-import { Divider } from "primereact/divider";
 import { ipcRenderer, shell } from "electron";
 import Head from "next/head";
 import DialogNewTrace from "../../components/traces/DialogNewTrace";
@@ -15,6 +14,7 @@ import { FilterMatchMode } from "primereact/api";
 import { InputText } from "primereact/inputtext";
 import Swal from "sweetalert2";
 import { useRouter } from "next/navigation";
+import { Tooltip } from "primereact/tooltip";
 
 export default function Page() {
   const controller = useContext(AppController);
@@ -66,9 +66,9 @@ export default function Page() {
           cancelButtonText: "Cancel",
           confirmButtonText: "Configure",
           reverseButtons: true,
-          color: document.documentElement.className == "dark" ? "white" : "",
+          color: document.documentElement.className.includes("dark") ? "white" : "",
           background:
-            document.documentElement.className == "dark" ? "#1f2937" : "",
+            document.documentElement.className.includes("dark") ? "#1f2937" : "",
         }).then((result) => {
           if (result.isConfirmed) {
             router.push("/preferences");
@@ -83,8 +83,8 @@ export default function Page() {
         cancelButtonText: "Cancel",
         confirmButtonText: "Configure",
         reverseButtons: true,
-        color: document.documentElement.className == "dark" ? "white" : "",
-        background: document.documentElement.className == "dark" ? "#1f2937" : "",
+        color: document.documentElement.className.includes("dark") ? "white" : "",
+        background: document.documentElement.className.includes("dark") ? "#1f2937" : "",
       }).then((result) => {
         if (result.isConfirmed) {
           router.push("/preferences");
@@ -94,7 +94,7 @@ export default function Page() {
   }, []);
 
   const reloadTraces = () => {
-    ipcRenderer.invoke("get-trace-list", {mode: controller.mode, address: controller.onlineServer.address, auth: controller.onlineServer.auth }).then((result) => {
+    ipcRenderer.invoke("get-trace-list").then((result) => {
       console.log(result);
       if (result === undefined || result === false) return;
       if (result.code === 500) {
@@ -122,28 +122,29 @@ export default function Page() {
           onClick={() => {
             handleAnalyze(row);
           }}
-        ></Button>
+        />
         <Button
           icon="pi pi-trash"
           severity="danger" text
           tooltip="Delete"
           onClick={e => confirm(e,row)}
-        ></Button>
+        />
         <Button
           icon="pi pi-download"
           severity="info" text
           tooltip="Download"
+          tooltipOptions={{ position: "left"}}
           onClick={() => {
-            ipcRenderer.invoke("download-trace", { mode: controller.mode, trace: row.name, address: controller.onlineServer.address, auth: controller.onlineServer.auth }).then((result) => {
+            ipcRenderer.invoke("download-trace", { trace: row.name, extension: row.extension}).then((result) => {
               if (result === undefined || result === false) return;
               if (result.code && result.code === 200) {
-                showToast('success', 'Trace downloaded successfully', 'File has been saved in your downloads folder');
+                showToast('success', 'Trace downloaded successfully', 'File has been saved');
                 return;
               }
               showToast('error', 'Error', result.error);
             });
            }}
-        ></Button>
+        />
       </div>
     );
   };
@@ -158,23 +159,19 @@ export default function Page() {
   const submitDeleteTrace = (row) => {
     ipcRenderer
       .invoke("delete-trace-file", {
-        trace: row.name,
-        mode: controller.mode,
-        address: controller.onlineServer.address ? controller.onlineServer.address : null,
-        auth: controller.onlineServer.auth ? controller.onlineServer.auth : null,
-      })
-      .then((result) => {
+        trace: row.name
+      }).then((result) => {
         if (result === undefined || result === false || result.code === 500) {
           showToast('error', 'Error', result.error);
           return;
         }
         setTraces((prev) => prev.filter((trace) => trace.name !== row.name));
-        showToast('success', 'Trace deleted successfully', '');
+        showToast('success', 'Success', 'Trace deleted successfully');
       });
   };
 
   const handleAnalyze = (row: any) => {
-    setTraceSelected(row.name+row.extension);
+    setTraceSelected(row);
     setAnalyzeDialogVisible(true);
   };
 
@@ -198,45 +195,28 @@ export default function Page() {
       });
     };
 
-    return (
-      <Button
+    return (<>
+      <Tooltip target=".upload-button" position="top" />
+      <span className="upload-button">
+        <Button
         icon="pi pi-plus"
-        className="p-mr-1"
+        className="p-mr-1 "
         onClick={handleClick}
-        label="Add New Trace"
+        label="Upload"
+        disabled={
+          (controller.mode === "Local" && controller.javaPath === "") ||
+          (controller.mode === "Online" && controller.onlineServer.address === "")}
+          tooltip={controller.mode === "Local" && controller.javaPath === "" ?
+            "Please configure the simulator in preferences" : controller.mode === "Online" && controller.onlineServer.address === "" ?
+              "Please configure the server to use in preferences" : "Upload Trace"}
+          tooltipOptions={{ showOnDisabled: true }}
       />
+      </span>
+      
+  </>
     );
   };
 
-  const TransferTrace = () => {
-    const handleClick = () => {
-      // ipcRenderer.invoke("open-trace-file").then((result) => {
-      //   if (result === undefined || result === false) return;
-      //   ipcRenderer
-      //     .invoke("store-trace-file", { name: result.fileName, path: result.path })
-      //     .then((result) => {
-      //       setTimeout(reloadTraces, 10);
-      //       Swal.fire({
-      //         icon: "success",
-      //         title: "Trace imported successfully",
-      //         timer: 900,
-      //         color: document.documentElement.className == "dark" ? "white" : "",
-      //         background:
-      //           document.documentElement.className == "dark" ? "#1f2937" : "",
-      //         showConfirmButton: false,
-      //       });
-      //     });
-      // });
-    };
-    return (
-      <Button
-        icon="pi pi-upload"
-        className="ml-[20px]"
-        onClick={handleClick}
-        label="Transfer Trace"
-      />
-    );
-  }
 
   return (
     <div className="flex flex-col p-5 w-full">
@@ -258,7 +238,6 @@ export default function Page() {
         <div></div>
         <div className="justify-between flex nowrap space-x-4">
           <AddTrace />
-              {controller.mode === "Online" && <TransferTrace />}
               <span className="p-input-icon-right">
                 <i className="pi pi-search" />
                 <InputText
@@ -282,6 +261,7 @@ export default function Page() {
             globalFilterFields={["name","type"]}
             sortField="date"
             sortOrder={-1}
+            emptyMessage="Upload a trace file using the button above."
         >
           <Column field="name" sortable header="Name" ></Column>
             <Column field="type" sortable header="Type" ></Column>
@@ -289,7 +269,7 @@ export default function Page() {
               (row) => {
                 return row.extension? row.extension.slice(1): "";
               }
-            }></Column>
+            } hidden></Column>
           <Column field="lines" sortable header="Lines"></Column>
           <Column
             field="date"
@@ -311,22 +291,26 @@ export default function Page() {
 
       {/* Dialogs */}
 
-      <DialogNewTrace
-        dialogVisible={dialogVisible}
-        setDialogVisible={setDialogVisible}
-        traceName={traceName}
-        setTraceName={setTraceName}
-        reloadTraces={reloadTraces}
-        showToast={showToast}
-        path={path}
-      />
-      <DialogAnalyzeTrace
-        analyzeDialogVisible={analyzeDialogVisible}
-        handleClose={() => { setAnalyzeDialogVisible(false); setTraceSelected(""); }}
-        type=""
-        id={traceSelected}
-        showToast={showToast}
-      />
+      {dialogVisible &&
+        <DialogNewTrace
+          dialogVisible={dialogVisible}
+          setDialogVisible={setDialogVisible}
+          traceName={traceName}
+          setTraceName={setTraceName}
+          reloadTraces={reloadTraces}
+          showToast={showToast}
+          path={path}
+        />
+      }
+      {analyzeDialogVisible &&
+        <DialogAnalyzeTrace
+          analyzeDialogVisible={analyzeDialogVisible}
+        handleClose={() => { setAnalyzeDialogVisible(false); setTraceSelected({}); }}
+          trace={traceSelected}
+          type=""
+          showToast={showToast}
+        />
+      }
     </div>
   );
 }

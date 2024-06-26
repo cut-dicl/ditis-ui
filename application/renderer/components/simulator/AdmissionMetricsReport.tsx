@@ -6,9 +6,11 @@ import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
 import { Divider } from "primereact/divider";
 import { Panel } from "primereact/panel";
+import { useTheme } from "next-themes";
 
-const AdmissionMetricsReport = () => {
+const AdmissionMetricsReport = (props) => {
   const reportCtx = useContext(ReportContext);
+  const theme = useTheme();
   const verticalBarLabels = [
     {
       label: "Admission Hits to Total Admissions",
@@ -38,7 +40,26 @@ const AdmissionMetricsReport = () => {
   const options = {
     responsive: true,
     maintainAspectRatio: false,
-    aspectRatio: 0.8,
+    aspectRatio: 1.1,
+    plugins: {
+      legend: {
+        labels: {
+          color: theme.theme === "dark" ? "lightgrey" : "black",
+        },
+      },
+    },
+    scales: {
+      x: {
+        ticks: {
+          color: theme.theme === "dark" ? "lightgrey" : "black",
+        },
+      },
+      y: {
+        ticks: {
+          color: theme.theme === "dark" ? "lightgrey" : "black",
+        },
+      },
+    },
   };
 
   const tableData = (filteredLabels: string[], layerName: string) => {
@@ -94,29 +115,62 @@ const AdmissionMetricsReport = () => {
 
   return (
     <div>
-      {verticalBarLabels.map((item) => {
-        return (
-          <div key={item.label} className="mb-20">
-            <Panel
-              header={item.label}
-              style={{
-                fontFamily: "Montserrat, sans-serif",
-              }}
-            >
-              <AdmissionPrefetchMetricsReportLayer
-                barLabelsIndexes={item}
-                reportContent={admissionMetricsReportContent}
-                options={options}
-                keys={keys}
-              />
-            </Panel>
-          </div>
-        );
-      })}
-
-      <div className="flex justify-center mb-10">
-        <Divider className="h-[1px] bg-gray-400 w-2/4" />
+      <div>
+        {verticalBarLabels.map((item) => {
+          return (
+            <div key={item.label} className="mb-5 avoid-page-break">
+              {!props.printMode && (
+                <Panel
+                  header={item.label}
+                  style={{
+                    fontFamily: "Montserrat, sans-serif",
+                  }}
+                >
+                  <AdmissionPrefetchMetricsReportLayer
+                    barLabelsIndexes={item}
+                    reportContent={admissionMetricsReportContent}
+                    options={options}
+                    keys={keys}
+                    printMode={props.printMode}
+                  />
+                </Panel>
+              )}
+              {props.printMode && (
+                <div key={item.label} className="force-break w-full">
+                  <div className="flex justify-center mb-5">
+                    <span
+                      style={{
+                        fontFamily: "Montserrat, sans-serif",
+                      }}
+                      className="font-bold text-center text-2xl"
+                    >
+                      Cache Admissions
+                    </span>
+                  </div>
+                  <div className="w-full mb-4 flex justify-center">
+                    <span className="text-center font-bold text-xl border-y-2 border-slate-300 py-1 px-4">
+                      {item.label}
+                    </span>
+                  </div>
+                  <AdmissionPrefetchMetricsReportLayer
+                    barLabelsIndexes={item}
+                    reportContent={admissionMetricsReportContent}
+                    options={options}
+                    keys={keys}
+                    printMode={props.printMode}
+                  />
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
+
+      {!props.printMode && (
+        <div className="flex justify-center mb-10">
+          <Divider className="h-[1px] bg-gray-400 w-2/4" />
+        </div>
+      )}
 
       <div>
         <div className="flex justify-center">
@@ -139,49 +193,100 @@ const AdmissionMetricsReport = () => {
 
               return (
                 <>
-                  <Panel
-                    header={layerName + " Layer"}
-                    className="mb-20 h-fit"
-                    key={layerName}
-                  >
-                    <DataTable
-                      value={tableData(layerLabels, layerName)}
-                      showGridlines
-                      tableStyle={{
-                        width: "100%",
-                        marginBottom: "100px",
-                        boxShadow: "0 4px 10px rgba(0, 0, 0, 0.2)",
-                        fontFamily: "Montserrat, sans-serif",
-                      }}
-                      emptyMessage={`No data to display for ${layerName} Layer`}
-                    >
-                      <Column
-                        header="Layers"
-                        field="label"
-                        style={{ textAlign: "right" }}
-                      />
-                      <Column
-                        header={admissionMetricsReportContent.header[7]}
-                        field="precision"
-                        style={{ textAlign: "right" }}
-                      />
-                      <Column
-                        header={admissionMetricsReportContent.header[8]}
-                        field="bytePrecision"
-                        style={{ textAlign: "right" }}
-                      />
-                      <Column
-                        header={admissionMetricsReportContent.header[9]}
-                        field="recall"
-                        style={{ textAlign: "right" }}
-                      />
-                      <Column
-                        header={admissionMetricsReportContent.header[10]}
-                        field="byteRecall"
-                        style={{ textAlign: "right" }}
-                      />
-                    </DataTable>
-                  </Panel>
+                  {!props.printMode && (
+                    <>
+                      <Panel
+                        header={layerName + " Layer"}
+                        className="mb-20 h-fit"
+                        key={layerName}
+                      >
+                        <DataTable
+                          value={tableData(layerLabels, layerName)}
+                          showGridlines
+                          tableStyle={{
+                            width: "100%",
+                            marginBottom: "100px",
+                            boxShadow: "0 4px 10px rgba(0, 0, 0, 0.2)",
+                            fontFamily: "Montserrat, sans-serif",
+                          }}
+                          emptyMessage={`No data to display for ${layerName} Layer`}
+                        >
+                          <Column
+                            header="Layers"
+                            field="label"
+                            style={{ textAlign: "right" }}
+                          />
+                          <Column
+                            header={admissionMetricsReportContent.header[7]}
+                            field="precision"
+                            style={{ textAlign: "right" }}
+                          />
+                          <Column
+                            header={admissionMetricsReportContent.header[8]}
+                            field="bytePrecision"
+                            style={{ textAlign: "right" }}
+                          />
+                          <Column
+                            header={admissionMetricsReportContent.header[9]}
+                            field="recall"
+                            style={{ textAlign: "right" }}
+                          />
+                          <Column
+                            header={admissionMetricsReportContent.header[10]}
+                            field="byteRecall"
+                            style={{ textAlign: "right" }}
+                          />
+                        </DataTable>
+                      </Panel>
+                    </>
+                  )}
+                  {props.printMode && (
+                    <>
+                      <div className="avoid-page-break">
+                        <DataTable
+                          value={tableData(layerLabels, layerName)}
+                          showGridlines
+                          className="text-xs"
+                          size={"small"}
+                          tableStyle={{
+                            width: "100%",
+                            marginBottom: "100px",
+                            boxShadow: "0 4px 10px rgba(0, 0, 0, 0.2)",
+                            fontFamily: "Montserrat, sans-serif",
+                          }}
+                          emptyMessage={`No data to display for ${layerName} Layer`}
+                        >
+                          <Column
+                            header="Layers"
+                            field="label"
+                            style={{ textAlign: "right" }}
+                          />
+                          <Column
+                            header={admissionMetricsReportContent.header[7]}
+                            field="precision"
+                            style={{ textAlign: "right" }}
+                          />
+                          <Column
+                            header={admissionMetricsReportContent.header[8]}
+                            field="bytePrecision"
+                            style={{ textAlign: "right" }}
+                          />
+                          <Column
+                            header={admissionMetricsReportContent.header[9]}
+                            field="recall"
+                            style={{ textAlign: "right" }}
+                          />
+                          <Column
+                            header={admissionMetricsReportContent.header[10]}
+                            field="byteRecall"
+                            style={{ textAlign: "right" }}
+                          />
+                        </DataTable>
+                      </div>
+
+                      <div className="page-break"></div>
+                    </>
+                  )}
                 </>
               );
             })}

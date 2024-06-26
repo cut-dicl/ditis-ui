@@ -3,9 +3,11 @@ import { ReportContext } from "../../hooks/useContext-hooks/simulator-report-hoo
 import { IReportObject } from "../../hooks/useContext-hooks/simulator-report-hook/simulator-report-hook-provider";
 import { Chart } from "primereact/chart";
 import { Panel } from "primereact/panel";
+import { useTheme } from "next-themes";
 
-const ApplicationsSummaryReport = () => {
+const ApplicationsSummaryReport = (props) => {
   const reportCtx = useContext(ReportContext);
+  const theme = useTheme();
 
   const applicationSummaryContent: IReportObject =
     reportCtx.reportData.Applications[0];
@@ -73,13 +75,24 @@ const ApplicationsSummaryReport = () => {
         mode: "index",
         intersect: false,
       },
+      legend: {
+        labels: {
+          color: theme.theme === "dark" ? "lightgrey" : "black",
+        },
+      },
     },
     scales: {
       x: {
         stacked: true,
+        ticks: {
+          color: theme.theme === "dark" ? "lightgrey" : "black",
+        },
       },
       y: {
         stacked: true,
+        ticks: {
+          color: theme.theme === "dark" ? "lightgrey" : "black",
+        },
       },
     },
   };
@@ -95,7 +108,6 @@ const ApplicationsSummaryReport = () => {
           item[0] !== "Trace Parser" &&
           item[0] !== "Workload Replay"
         ) {
-          console.log(item);
           return item;
         }
       })
@@ -150,12 +162,24 @@ const ApplicationsSummaryReport = () => {
     responsive: true,
     maintainAspectRatio: false,
     indexAxis: "y",
+    plugins: {
+      legend: {
+        display: true,
+        labels: {
+          color: theme.theme === "dark" ? "lightgrey" : "black",
+        },
+      },
+    },
     scales: {
       x: {
         stacked: true,
         title: {
           display: true,
           text: "Time(s)",
+          color: theme.theme === "dark" ? "lightgrey" : "black",
+        },
+        ticks: {
+          color: theme.theme === "dark" ? "lightgrey" : "black",
         },
       },
       y: {
@@ -163,40 +187,108 @@ const ApplicationsSummaryReport = () => {
         title: {
           display: true,
           text: "Applications",
+          color: theme.theme === "dark" ? "lightgrey" : "black",
+        },
+        ticks: {
+          color: theme.theme === "dark" ? "lightgrey" : "black",
         },
       },
     },
   };
 
-  return (
-    <>
-      <Panel
-        header={"Application Request Counts"}
-        style={{
-          fontFamily: "Montserrat, sans-serif",
-        }}
-        className="mb-20"
-      >
-        <div>
-          <Chart type="bar" data={stackedBarData} options={stackedBarOptions} height={
-              `${stackedBarData.labels.length > 1 ? (stackedBarData.labels.length * 30 + 150) : 200}px`
-            }/>
-        </div>
-      </Panel>
+  if (!props.printMode)
+    return (
+      <>
+        <Panel
+          header={"Application Request Counts"}
+          style={{
+            fontFamily: "Montserrat, sans-serif",
+          }}
+          className="mb-20"
+        >
+          <div>
+            <Chart
+              type="bar"
+              data={stackedBarData}
+              options={stackedBarOptions}
+              height={`${stackedBarData.labels.length > 1
+                  ? stackedBarData.labels.length * 30 + 150
+                  : 200
+                }px`}
+            />
+          </div>
+        </Panel>
 
-      <div>
         <Panel
           header={"Application Runtimes"}
           style={{
             fontFamily: "Montserrat, sans-serif",
           }}
         >
-            <Chart type="bar" data={countData} options={chartOptions} height={
-              `${countData.labels.length > 1 ? (countData.labels.length * 30 + 150) : 200}px`
-            } />
+          <Chart
+            type="bar"
+            data={countData}
+            options={chartOptions}
+            height={`${countData.labels.length > 1
+                ? countData.labels.length * 30 + 150
+                : 200
+              }px`}
+          />
         </Panel>
+      </>
+    );
+
+  return (
+    <>
+      <div className="flex flex-col avoid-page-break">
+      <span
+        style={{
+          fontFamily: "Montserrat, sans-serif",
+        }}
+        className="font-bold text-center text-2xl"
+      >
+        Application Summary
+      </span>
+      <Chart
+        type="bar"
+        className="application-summary w-full"
+        data={stackedBarData}
+        options={{
+          ...chartOptions, plugins: {
+            title: {
+              display: true,
+              text: "Application Request Counts",
+              font: { size: 20}
+            }
+          }
+        }}
+        height={`${stackedBarData.labels.length > 1
+            ? stackedBarData.labels.length * 25 + 150
+            : 150
+          }px`}
+        width="100%"
+        />
+        <Chart
+          type="bar"
+          className="application-summary w-full"
+          data={countData}
+            options={{
+              ...chartOptions, plugins: {
+                title: {
+                  display: true,
+                  text: "Application Runtimes",
+                  font: { size: 20}
+                }
+              }
+            }}
+          height={`${countData.labels.length > 1
+              ? countData.labels.length * 25 + 150
+              : 150
+            }px`}
+          width="100%"
+          />
       </div>
-    </>
+      </>
   );
 };
 

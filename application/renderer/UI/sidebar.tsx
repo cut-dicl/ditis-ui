@@ -8,6 +8,7 @@ import { Tag } from "primereact/tag";
 export default function BasicDemo() {
   const [expanded, setExpanded] = useState(false);
   const controller = useContext(AppController);
+  const username = controller.username;
 
   const Option = (props: {
     optionIcon: string;
@@ -93,14 +94,14 @@ export default function BasicDemo() {
               style={{color: 'white'}}
               icon="pi pi-server"
               className="flex dark:hidden"
-              value={"Server: " + controller.onlineServer.serverName} ></Tag>
+              value={"Server: " + controller.onlineServer.serverName + ` [${username}]`} ></Tag>
             <Tag
               style={{
                 background: 'linear-gradient(180deg, rgb(0, 0, 198) 30%, rgb(0, 0, 150) 100%)', color: 'white'
               }}
               className="hidden dark:flex"
               icon="pi pi-server"
-              value={"Server: " + controller.onlineServer.serverName} ></Tag>
+              value={"Server: " + controller.onlineServer.serverName } ></Tag>
             </>
           )}
         </div>
@@ -157,12 +158,6 @@ export default function BasicDemo() {
           optionIcon="pi pi-cog"
           optionName="Preferences"
           optionLink="/preferences"
-        />
-        <Linebreak />
-        <Option
-          optionIcon="pi pi-question-circle"
-          optionName="Help"
-          optionLink="/help"
         />
       </div>
       <div

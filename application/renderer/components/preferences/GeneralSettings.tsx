@@ -4,6 +4,7 @@ import { InputSwitch } from "primereact/inputswitch";
 import React from "react";
 import Swal from "sweetalert2";
 import { AppController } from "../../hooks/useContext-hooks/appcontroller-hook/appcontroller-hook";
+import { Button } from "primereact/button";
 
 export default function GeneralSettings() {
   const [hardwareAcceleration, setHardwareAcceleration] = React.useState(true);
@@ -29,8 +30,8 @@ export default function GeneralSettings() {
       showCancelButton: true,
       cancelButtonText: "Cancel",
       confirmButtonText: "Yes",
-      color: document.documentElement.className == "dark" ? "white" : "",
-      background: document.documentElement.className == "dark" ? "#1f2937" : "",
+      color: document.documentElement.className.includes("dark") ? "white" : "",
+      background: document.documentElement.className.includes("dark") ? "#1f2937" : "",
     }).then((result) => {
       if (result.isConfirmed)
         ipcRenderer.invoke("set-hardware-acceleration", { enabled });
@@ -60,7 +61,7 @@ export default function GeneralSettings() {
         <br />
         <small className="italic">On by default</small>
       </div>
-      <Divider className="h-[1px] bg-gray-400" />
+      {/* <Divider className="h-[1px] bg-gray-400" />
       <div>
         <div className="flex flex-row space-x-5">
           <h1>Run Optimizer in debug mode</h1>
@@ -70,7 +71,7 @@ export default function GeneralSettings() {
           When enabled, the optimizer will run in debug mode which will print additional information in case of errors.<br/> However,
           only one optimization can be run at a time.
         </small>
-      </div>
+      </div> */}
       {/* <div>
         <div className="flex flex-row space-x-5">
           <h1>Show simulation results on finish</h1>
@@ -83,6 +84,11 @@ export default function GeneralSettings() {
         <br />
         <small className="italic">Not implemented</small>
       </div> */}
+
+      <Divider className="h-[1px] bg-gray-400" />
+      <span>If you require any assistance, check out the manual below</span>
+      <br />
+      <Button className="mt-2" onClick={() => ipcRenderer.invoke("open-manual")}>Open Manual</Button>
     </div>
   );
 }

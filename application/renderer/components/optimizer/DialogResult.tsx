@@ -1,22 +1,30 @@
-import React, { useEffect, useContext, useState, useRef, useLayoutEffect } from "react";
+import React, {
+  useEffect,
+  useContext,
+  useState,
+  useRef,
+  useLayoutEffect,
+  Suspense,
+} from "react";
 import { Dialog } from "primereact/dialog";
 import { ipcRenderer } from "electron";
 import { TabMenu } from "primereact/tabmenu";
 import { Toast } from "primereact/toast";
 import { AppController } from "../../hooks/useContext-hooks/appcontroller-hook/appcontroller-hook";
 import { ProgressSpinner } from "primereact/progressspinner";
-import ResultsTable from "./ResultsTable";
 import ResultsConfig from "./ResultsConfig";
-import ResultsDetailed from "./ResultsDetailed";
 import ReportDialog from "../simulator/ReportDialog";
 import { ReportContext } from "../../hooks/useContext-hooks/simulator-report-hook/simulator-report-hook";
 import { ConfFormContextProvider } from "../../hooks/useContext-hooks/conf-form-hook/conf-form-hook-provider";
-import { NextPreviousButtonContextProvider } from "../../hooks/useContext-hooks/next-previous-buttons-hook/next-previous-buttons-hook-provider";
+import Swal from "sweetalert2";
+import { useRouter } from "next/navigation";
 
 export function DialogResult({
   opt,
   dialogVisible,
   setDialogVisible,
+  setOptimizationSelected,
+  deleteOptimization,
 }) {
   const controller = useContext(AppController);
   const reportCtx = useContext(ReportContext);
@@ -25,7 +33,6 @@ export function DialogResult({
   const [columns, setColumns] = useState([]);
 
   const [bestReportVisible, setBestReportVisible] = useState(false);
-  const [analyzeConfig, setAnalyzeConfig] = useState("");
   const [isLoaded, setIsLoaded] = useState(false);
   const [selectedColumn, setSelectedColumn] = useState([]);
   const [chartMode, setChartMode] = useState("table");
@@ -35,21 +42,28 @@ export function DialogResult({
   const [reportsLoaded, setReportsLoaded] = useState(false);
   const [noData, setNoData] = useState(false);
   const items = [
-        { label: "Results", icon: "pi pi-fw pi-list" },
-        { label: "Analysis", icon: "pi pi-fw pi-chart-bar" },
-        { label: "Best Config", icon: "pi pi-fw pi-file" },
-        { label: "Best Report", icon: "pi pi-fw pi-chart-pie" },
-      ]
+    { label: "Results", icon: "pi pi-fw pi-list" },
+    { label: "Analysis", icon: "pi pi-fw pi-chart-bar" },
+    { label: "Best Config", icon: "pi pi-fw pi-file" },
+    { label: "Best Report", icon: "pi pi-fw pi-chart-pie" },
+    { label: "Print", icon: "pi pi-fw pi-print" },
+  ];
 
   const toast = useRef(null);
+  const router = useRouter();
   const showToast = (severity, summary, detail) => {
-    toast.current && toast.current.show({
-      severity: severity,
-      summary: summary,
-      detail: detail,
-      life: 3000,
-    });
+    toast.current &&
+      toast.current.show({
+        severity: severity,
+        summary: summary,
+        detail: detail,
+        life: 3000,
+      });
   };
+
+  const ResultsTable = React.lazy(() => import("./ResultsTable"));
+  const ResultsDetailed = React.lazy(() => import("./ResultsDetailed"));
+  const ResultsPrint = React.lazy(() => import("./ResultsPrint"));
 
   useLayoutEffect(() => {
     ipcRenderer
@@ -74,16 +88,46 @@ export function DialogResult({
     setNoData(false);
     if (opt != null) {
       ipcRenderer
-        .invoke("get-optimizer-csv-file", { 
+        .invoke("get-optimizer-csv-file", {
           id: opt.id,
-          mode: controller.mode,
-          address: controller.onlineServer.address,
-          auth: controller.onlineServer.auth,
-         })
+        })
         .then((result) => {
           if (!result) return;
+          else if (result.code === 500) {
+            let optSel = opt;
+            setDialogVisible(false);
+            setOptimizationSelected({
+              name: "",
+              id: -1,
+            });
+            Swal.fire({
+              icon: "error",
+              title: "Error",
+              text: result.error,
+              showCancelButton: true,
+              confirmButtonText: "Delete Optimization",
+              confirmButtonColor: "#d33",
+              reverseButtons: true,
+              color:
+                document.documentElement.className.includes("dark") ? "white" : "",
+              background:
+                document.documentElement.className.includes("dark") ? "#1f2937" : "",
+              denyButtonText: "Go to Configurations",
+              showDenyButton: true,
+              denyButtonColor: "#3085d6",
+            }).then((result) => {
+              if (result.isDenied) {
+                router.push("/configurations");
+                return;
+              }
+
+              if (result.isConfirmed) {
+                deleteOptimization(optSel);
+                return;
+              }
+            });
+          }
           if (!result.data || !result.data.data || !result.data.columns) {
-            console.log("aa");
             setData([]);
             setColumns([]);
             showToast("error", "Error", "No data found");
@@ -91,24 +135,23 @@ export function DialogResult({
             setIsLoaded(true);
             return;
           }
-          else if (result.code === 500) return;
           setData(result.data.data);
           setColumns(result.data.columns);
           setIsLoaded(true);
         });
-      ipcRenderer
-        .invoke("get-optimizer-best-config", {
-          id: opt.id,
-          javaPath: controller.javaPath,
-        })
+        ipcRenderer
+        .invoke("fetch-optimizer-report", { id: opt.id })
         .then((result) => {
-          if (!result) return;
-          else if (result.code === 500) return;
-          setAnalyzeConfig(result.data);
+          if (result.code === 200) {
+            reportCtx.handleReportData(result.data);
+            setReportsLoaded(true);
+          } else if (result.code === 500) {
+            reportCtx.handleReportData({});
+            setReportsLoaded(true);
+          }
         });
     }
   }, [opt]);
-
 
   const saveOptions = () => {
     ipcRenderer.invoke("edit-preferences-file", {
@@ -122,22 +165,12 @@ export function DialogResult({
     });
   };
 
-  useEffect(() => {
-    if (activeIndex === 3) {
-      ipcRenderer.invoke("fetch-optimizer-report", { id: opt.id }).then((result) => {
-        console.log(result);
-        reportCtx.handleReportData(result.data);
-        setReportsLoaded(true);
-      });
-    }
-  }, [activeIndex]);
-
   return (
     <Dialog
-      header={"Optimization Results"}
+      header={opt.name + " Results"}
       style={{
-        height: "90%",
-        width: "90%",
+        height: "95%",
+        width: "95%",
         display: "flex",
         flexDirection: "column",
       }}
@@ -149,6 +182,9 @@ export function DialogResult({
       className="dialog-optimizer-results "
       contentClassName="overflow-hidden"
       id="dialog-optimizer-results"
+      headerClassName="h-[70px]"
+      dismissableMask
+      draggable={false}
     >
       <Toast ref={toast} />
       <TabMenu
@@ -157,57 +193,71 @@ export function DialogResult({
         onTabChange={(e) => setActiveIndex(e.index)}
         className="mb-3"
       />
-      <div className="flex flex-col h-[90%] overflow-auto">
-      {!isLoaded && (
-        <div className="flex flex-col justify-center items-center h-[90%]">
-          <ProgressSpinner />
-          <h1>Loading...</h1>
-        </div>
-      )}
-      {noData && (
-        <div className="flex flex-col justify-center items-center h-[90%]">
-          <h1>No data found</h1>
-        </div>
+      <Suspense fallback={<ProgressSpinner />}>
+        <div className="flex flex-col h-[90%] overflow-auto">
+          {!isLoaded && (
+            <div className="flex flex-col justify-center items-center h-[90%]">
+              <ProgressSpinner />
+              <h1>Loading...</h1>
+            </div>
+          )}
+          {noData && (
+            <div className="flex flex-col justify-center items-center h-[90%]">
+              <h1>No data found</h1>
+            </div>
           )}
 
-      {(isLoaded && !noData) && activeIndex === 0 && (
-        <ResultsTable columns={columns} data={data} />
-      )}
-      {(isLoaded && !noData) && activeIndex === 1 && (
-        <ResultsDetailed
-          columns={columns}
-          data={data}
-          selectedColumn={selectedColumn}
-          setSelectedColumn={setSelectedColumn}
-          selectedMetrics={selectedMetrics}
-          setSelectedMetrics={setSelectedMetrics}
-          chartMode={chartMode}
-          setChartMode={setChartMode}
-          chartSize={chartSize}
-          setChartSize={setChartSize}
-        />
-      )}
-      {(isLoaded && !noData) && activeIndex === 2 && (
-        <div className="grow">
-        <ConfFormContextProvider>
-          <NextPreviousButtonContextProvider>
-            <ResultsConfig
-              id={opt.id}
-              analyzeConfig={analyzeConfig}
+          {isLoaded && !noData && activeIndex === 0 && (
+            <ResultsTable
+              columns={columns}
+              data={data}
+              optID={opt.id}
               showToast={showToast}
             />
-          </NextPreviousButtonContextProvider>
-          </ConfFormContextProvider>
-          </div>
-      )}
-      {(isLoaded && !noData) && activeIndex === 3 && reportsLoaded && (
-        <ReportDialog
-          showReportDialog={bestReportVisible}
-          setShowReportDialog={setBestReportVisible}
-          dialogMode={false}
-        />
-        )}
+          )}
+          {isLoaded && !noData && activeIndex === 1 && (
+            <ResultsDetailed
+              columns={columns}
+              data={data}
+              selectedColumn={selectedColumn}
+              setSelectedColumn={setSelectedColumn}
+              selectedMetrics={selectedMetrics}
+              setSelectedMetrics={setSelectedMetrics}
+              chartMode={chartMode}
+              setChartMode={setChartMode}
+              chartSize={chartSize}
+              setChartSize={setChartSize}
+            />
+          )}
+          {isLoaded && !noData && activeIndex === 2 && (
+            <div className="grow">
+              <ConfFormContextProvider>
+                <ResultsConfig
+                  id={opt.id}
+                />
+              </ConfFormContextProvider>
+            </div>
+          )}
+          {isLoaded && !noData && activeIndex === 3 && reportsLoaded && (
+            <ReportDialog
+              showReportDialog={bestReportVisible}
+              setShowReportDialog={setBestReportVisible}
+              dialogMode={false}
+              simulationID={opt.id}
+            />
+          )}
+          {isLoaded && !noData && activeIndex === 4 && (
+            <ResultsPrint
+              optimization={opt}
+              data={data}
+              columns={columns}
+              selectedColumn={selectedColumn}
+              selectedMetrics={selectedMetrics}
+              name={opt.name}
+            />
+          )}
         </div>
+      </Suspense>
     </Dialog>
   );
 }
