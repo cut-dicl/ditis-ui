@@ -1,4 +1,3 @@
-import { ipcRenderer } from "electron";
 import { useContext, useEffect, useState } from "react";
 import { AppController } from "../useContext-hooks/appcontroller-hook/appcontroller-hook";
 
@@ -8,7 +7,7 @@ export const useTraces = () => {
   const appController = useContext(AppController);
 
   useEffect(() => {
-    ipcRenderer
+    window.ipc
       .invoke("get-trace-list")
       .then((result) => {
         console.log(result);

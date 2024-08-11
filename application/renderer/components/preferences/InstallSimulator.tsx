@@ -1,4 +1,3 @@
-import { ipcRenderer } from "electron";
 import { Button } from "primereact/button";
 import { Dialog } from "primereact/dialog";
 import { InputText } from "primereact/inputtext";
@@ -38,7 +37,7 @@ export default function InstallSimulator(props) {
     setReqSent(true);
     setErr("");
 
-    ipcRenderer
+    window.ipc
       .invoke("request-jars", {
         serverName: controller.onlineServer.serverName,
         key
@@ -68,7 +67,7 @@ export default function InstallSimulator(props) {
   };
 
   const deleteSimulator = () => {
-    ipcRenderer
+    window.ipc
       .invoke("delete-jars")
       .then((result) => {
         if (result === undefined) return;
@@ -84,7 +83,7 @@ export default function InstallSimulator(props) {
   }
 
   const checkUpdates = () => {
-    ipcRenderer
+    window.ipc
       .invoke("check-simulator-version")
       .then((result) => {
         if (result === undefined) return;
@@ -192,7 +191,7 @@ export default function InstallSimulator(props) {
   
   
   const handleOnlineServer = (newServer) => {
-    ipcRenderer
+    window.ipc
       .invoke("get-server", { serverName: newServer })
       .then((result) => {
         if (result === undefined) return;

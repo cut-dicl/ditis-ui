@@ -21,7 +21,7 @@ export function BoxplotView({
     return (
       selectedMetrics &&
         selectedMetrics.map((metric) => {
-          return (<>
+          return (<div key={metric}>
             <BoxplotChart
               plotdata={{
                 labels: Object.keys(plotdata).map((str) => {
@@ -48,11 +48,10 @@ export function BoxplotView({
               }}
               metric={metric}
               chartSize={chartSize}
-              key={metric}
               print={print}
             />
             <div className="page-break"></div>
-            </>
+            </div>
           );
         })
     )

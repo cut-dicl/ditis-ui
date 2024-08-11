@@ -1,4 +1,3 @@
-import { ipcRenderer } from "electron";
 import { AppController } from "../../hooks/useContext-hooks/appcontroller-hook/appcontroller-hook";
 import { useContext, useEffect, useRef, useState } from "react";
 import Swal from "sweetalert2";
@@ -60,7 +59,7 @@ export const useSimulationsTable = (simulationMode: simulationModeType) => {
             Swal.showLoading();
           },
         });
-        ipcRenderer
+        window.ipc
           .invoke("terminate-simulation", {
             simulationMode,
             pid,
@@ -98,7 +97,7 @@ export const useSimulationsTable = (simulationMode: simulationModeType) => {
   };
 
   const refreshOptimization = (id: number, index) => {
-    ipcRenderer
+    window.ipc
       .invoke("refresh-simulation", {
         id,
         simulationMode,
@@ -136,7 +135,7 @@ export const useSimulationsTable = (simulationMode: simulationModeType) => {
   };
 
   const reloadSimulations = () => {
-    ipcRenderer
+    window.ipc
       .invoke("get-running-simulations", {
         running: simulations,
         simulationMode,
@@ -183,7 +182,7 @@ export const useSimulationsTable = (simulationMode: simulationModeType) => {
 
   const openResultDialog = (id: number, name?: string) => {
     if (simulationMode === "Simulator") {
-      ipcRenderer
+      window.ipc
         .invoke("fetch-report", {
           id,
           name,
@@ -225,7 +224,7 @@ export const useSimulationsTable = (simulationMode: simulationModeType) => {
           if (result.code === 200) reportCtx.handleReportData(result.data);
         });
     } else if (simulationMode === "Optimizer") {
-      ipcRenderer.invoke("fetch-optimizer-report", { id }).then((result) => {
+      window.ipc.invoke("fetch-optimizer-report", { id }).then((result) => {
         if (result.code === 200) reportCtx.handleReportData(result.data);
       });
     }
@@ -246,7 +245,7 @@ export const useSimulationsTable = (simulationMode: simulationModeType) => {
   const deleteSimulation = (id: number, name: string) => {
     if (simulationMode === "Optimizer") {
       console.log("Deleting optimization");
-      ipcRenderer.invoke("delete-optimization", { id: id }).then((result) => {
+      window.ipc.invoke("delete-optimization", { id: id }).then((result) => {
         console.log(result);
         if (result.code === 500) {
           showToast("error", "Error", result.error);
@@ -257,7 +256,7 @@ export const useSimulationsTable = (simulationMode: simulationModeType) => {
         showToast("success", "Success", `${name} deleted succesfully`);
       });
     } else {
-      ipcRenderer
+      window.ipc
         .invoke("delete-simulation", {
           id,
         })

@@ -1,4 +1,3 @@
-import { ipcRenderer } from "electron";
 import { InputTextarea } from "primereact/inputtextarea";
 import { Tooltip } from "primereact/tooltip";
 import React, { useEffect } from "react";
@@ -19,7 +18,7 @@ export default function SimulatorPath() {
 
   const handleSimulatorPath = (newPath) => {
       if (newPath === javaPath) return;
-      ipcRenderer
+      window.ipc
         .invoke("edit-preferences-file", { key: "javaPath", value: newPath })
         .then((result) => {
           console.log(result);
@@ -93,7 +92,7 @@ export default function SimulatorPath() {
         <Button
           label="Browse Folder"
           onClick={() => {
-            ipcRenderer.invoke("browse-folder").then((result) => {
+            window.ipc.invoke("browse-folder").then((result) => {
               if (result === undefined || result === false) return;
               handleSimulatorPath(result);
             });

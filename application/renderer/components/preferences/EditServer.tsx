@@ -1,4 +1,3 @@
-import { ipcRenderer } from "electron";
 import { Button } from "primereact/button";
 import { Dropdown } from "primereact/dropdown";
 import { InputText } from "primereact/inputtext";
@@ -23,7 +22,7 @@ export default function EditServer({ servers, setServers, toast, showToast }) {
 
   const handleSimulationPreference = (newPreference) => {
     controller.setSimulationPreference(newPreference);
-    ipcRenderer.invoke("edit-preferences-file", {
+    window.ipc.invoke("edit-preferences-file", {
       key: "simulationPreference",
       value: newPreference,
     });
@@ -77,7 +76,7 @@ export default function EditServer({ servers, setServers, toast, showToast }) {
   }
 
   const deleteServer = (clearData, password) => {
-    ipcRenderer
+    window.ipc
       .invoke("remove-server", {
         server: selectedServer,
         clearData,
@@ -115,7 +114,7 @@ export default function EditServer({ servers, setServers, toast, showToast }) {
   const editServer = () => {
     let newServerName = (document.getElementById("edit-server-name") as HTMLInputElement).value;
     let newAddress = (document.getElementById("edit-server-address") as HTMLInputElement).value;
-    ipcRenderer
+    window.ipc
       .invoke("edit-server", {
         serverName: selectedServer,
         newServerName,
@@ -132,7 +131,7 @@ export default function EditServer({ servers, setServers, toast, showToast }) {
           return;
         }
 
-        ipcRenderer.invoke("ping-server", { address: newAddress }).then((result) => {
+        window.ipc.invoke("ping-server", { address: newAddress }).then((result) => {
           if (!result || result.code == 500) {
             showToast("warn", "Server Edited", "Edit successful but server is offline");
           } else {
@@ -162,7 +161,7 @@ export default function EditServer({ servers, setServers, toast, showToast }) {
     let username = (document.getElementById("edit-username") as HTMLInputElement).value;
     let password = (document.getElementById("edit-password") as HTMLInputElement).value;
     let key = (document.getElementById("keyinput") as HTMLInputElement)?.value;
-    ipcRenderer
+    window.ipc
       .invoke("change-user", {
         serverName: selectedServer,
         username,
@@ -249,7 +248,7 @@ export default function EditServer({ servers, setServers, toast, showToast }) {
                   label="Ping Server"
                   className="mt-5 w-[200px]"
                   onClick={() => {
-                    ipcRenderer
+                    window.ipc
                       .invoke("ping-server", {
                         address:
                           (document.getElementById("edit-server-address") as HTMLInputElement).value,

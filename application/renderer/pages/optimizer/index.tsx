@@ -10,7 +10,6 @@ import { AppController } from "../../hooks/useContext-hooks/appcontroller-hook/a
 import { Button } from "primereact/button";
 import { Dropdown } from "primereact/dropdown";
 import { Tooltip } from "primereact/tooltip";
-import { ipcRenderer } from "electron";
 import { Divider } from "primereact/divider";
 import { Checkbox } from "primereact/checkbox";
 import { showSwalWithButton } from "../../utils/SwalFunctions";
@@ -136,7 +135,7 @@ export default function Optimizer() {
   }, [options.maxMemory]);
 
   const getTraceList = () => {
-    ipcRenderer
+    window.ipc
       .invoke("get-trace-list")
       .then((result) => {
         if (!result || result.code !== 200) {
@@ -161,7 +160,7 @@ export default function Optimizer() {
       storage: [{ id: -1, name: "Add New" },{ id: 0, name: "Default Storage Configuration" }],
     };
 
-    ipcRenderer.invoke('get-configs').then((result) => {
+    window.ipc.invoke('get-configs').then((result) => {
       if (!result) {
         showToast("error", "Error", "Failed to get configurations");
         return;
@@ -200,7 +199,7 @@ export default function Optimizer() {
   const startOptimizer = async (e) => {
     e.preventDefault();
     setRunning(true);
-    await ipcRenderer
+    await window.ipc
       .invoke("run-optimizer", {
         trace: options.trace,
         configuration: options.configuration,

@@ -4,14 +4,13 @@ import { RadioButton } from "primereact/radiobutton";
 import { Tooltip } from "primereact/tooltip";
 import React from "react";
 import { AppController } from "../../hooks/useContext-hooks/appcontroller-hook/appcontroller-hook";
-import { ipcRenderer } from "electron";
 
 export default function SimulatorPreference({servers, showToast}) {
   console.log(servers);
   const controller = React.useContext(AppController);
 
   const handleOnlineServer = (e) => {
-    ipcRenderer.invoke("check-user", {serverName:e.target.value}).then((result) => {
+    window.ipc.invoke("check-user", {serverName:e.target.value}).then((result) => {
 
       console.log(result);
       if (result === undefined) return;
@@ -26,7 +25,7 @@ export default function SimulatorPreference({servers, showToast}) {
 
   const handleSimulationPreference = (newPreference) => {
     controller.setSimulationPreference(newPreference);
-    ipcRenderer.invoke("edit-preferences-file", {
+    window.ipc.invoke("edit-preferences-file", {
       key: "simulationPreference",
       value: newPreference,
     });

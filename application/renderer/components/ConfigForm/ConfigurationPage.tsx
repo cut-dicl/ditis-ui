@@ -7,7 +7,7 @@ import React, { useContext, useEffect, useRef, useState } from "react";
 
 import { convertDate } from "../../utils/convertStringFunctions";
 import { useConfPage } from "../../hooks/custom-hooks/useConfPage";
-import {formTypes} from "../../pages/configurations";
+import { formTypes } from "../../pages/configurations";
 
 import { TabMenu } from "primereact/tabmenu";
 import { FilterMatchMode } from "primereact/api";
@@ -127,17 +127,17 @@ export const ConfigurationPage = ({
 
   const confirm = (event, row) => {
     confirmPopup({
-        target: event.currentTarget,
-        message: `Do you want to delete configuration ${row.name}?`,
-        icon: 'pi pi-info-circle',
-        acceptClassName: 'p-button-danger',
-        accept: () => accept(row)
+      target: event.currentTarget,
+      message: `Do you want to delete configuration ${row.name}?`,
+      icon: "pi pi-info-circle",
+      acceptClassName: "p-button-danger",
+      accept: () => accept(row),
     });
-};
+  };
 
-const accept = (row) => {
-  deleteConfigHandler(row);
-};
+  const accept = (row) => {
+    deleteConfigHandler(row);
+  };
 
   useEffect(() => {
     if (controller.javaPath === "" && controller.mode === "Local") {
@@ -151,9 +151,12 @@ const accept = (row) => {
           confirmButtonText: "Configure",
           reverseButtons: true,
 
-          color: document.documentElement.className.includes("dark") ? "white" : "",
-          background:
-            document.documentElement.className.includes("dark") ? "#1f2937" : "",
+          color: document.documentElement.className.includes("dark")
+            ? "white"
+            : "",
+          background: document.documentElement.className.includes("dark")
+            ? "#1f2937"
+            : "",
         }).then((result) => {
           if (result.isConfirmed) {
             router.push("/preferences");
@@ -172,9 +175,12 @@ const accept = (row) => {
         confirmButtonText: "Configure",
         reverseButtons: true,
 
-        color: document.documentElement.className.includes("dark") ? "white" : "",
-        background:
-          document.documentElement.className.includes("dark") ? "#1f2937" : "",
+        color: document.documentElement.className.includes("dark")
+          ? "white"
+          : "",
+        background: document.documentElement.className.includes("dark")
+          ? "#1f2937"
+          : "",
       }).then((result) => {
         if (result.isConfirmed) {
           router.push("/preferences");
@@ -226,7 +232,7 @@ const accept = (row) => {
           severity="danger"
           className="delete-button"
           text
-          onClick={e => confirm(e,rowData)}
+          onClick={(e) => confirm(e, rowData)}
         />
       </div>
     );
@@ -336,14 +342,11 @@ const accept = (row) => {
                 />
               </span>
             </div>
-            <span className="p-input-icon-right">
-              <i className="pi pi-search" />
-              <InputText
-                value={globalFilterValue}
-                onChange={onGlobalFilterChange}
-                placeholder="Keyword Search"
-              />
-            </span>
+            <InputText
+              value={globalFilterValue}
+              onChange={onGlobalFilterChange}
+              placeholder="Keyword Search"
+            />
           </div>
         </div>
         <Toast ref={toast} />
@@ -457,14 +460,11 @@ const accept = (row) => {
                   />
                 </span>
               </div>
-              <span className="p-input-icon-right">
-                <i className="pi pi-search" />
-                <InputText
-                  value={globalFilterValue}
-                  onChange={onGlobalFilterChange}
-                  placeholder="Keyword Search"
-                />
-              </span>
+              <InputText
+                value={globalFilterValue}
+                onChange={onGlobalFilterChange}
+                placeholder="Keyword Search"
+              />
             </div>
           </div>
           <DataTable
@@ -532,7 +532,7 @@ const accept = (row) => {
           </DataTable>
         </div>
         <Toast ref={toast} />
-        <ConfirmPopup />  
+        <ConfirmPopup />
         <Dialog
           onHide={() => setShowDialog(false)}
           visible={showDialog}

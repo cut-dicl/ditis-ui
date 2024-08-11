@@ -1,5 +1,4 @@
 import { useContext, useEffect, useState } from "react";
-import { ipcRenderer } from "electron";
 
 import { ConfFormContext } from "../useContext-hooks/conf-form-hook/conf-form-hook";
 import { ConfigurationObjectType } from "../useContext-hooks/conf-form-hook/conf-form-hook-provider";
@@ -42,7 +41,7 @@ export const useConfForm = (props: useConfFormProps) => {
         if (props.confObject) {
           setConfigurationObject(props.confObject);
         } else {
-          ipcRenderer
+          window.ipc
             .invoke("get-default-config")
             .then((result) => {
               const { code, content } = result;
@@ -56,7 +55,7 @@ export const useConfForm = (props: useConfFormProps) => {
             });
         }
       } else if (props.formType === "optimizer") {
-        ipcRenderer
+        window.ipc
           .invoke("get-default-optimizer-config")
           .then((result) => {
             const { code, content } = result;

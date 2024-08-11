@@ -109,6 +109,7 @@ const Configurations = () => {
           <VarianceForm
             showForm={setContentShown}
             varianceSettings={varianceSettings}
+            resetVarianceSettings={() => setVarianceSettings({})}
           />
         )}
       </div>

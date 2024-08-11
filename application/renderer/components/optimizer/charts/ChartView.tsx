@@ -13,7 +13,7 @@ export function ChartView({ results, selectedMetrics, chartSize, print }: ChartV
   if (print) {
     return (
       selectedMetrics.map((metric) => {
-        return (<>
+        return (<div key={metric}>
           <BarChart
             plotdata={{
               labels: Object.keys(results).map((str) => {
@@ -39,11 +39,10 @@ export function ChartView({ results, selectedMetrics, chartSize, print }: ChartV
             }}
             metric={metric}
             chartSize={chartSize}
-            key={metric}
             print={print}
           />
           <div className="page-break"></div>
-          </>
+          </div>
         );
       })
     )

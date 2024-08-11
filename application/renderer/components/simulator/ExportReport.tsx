@@ -8,7 +8,6 @@ import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
 import { Toast } from "primereact/toast";
 import { Checkbox } from "primereact/checkbox";
-import { ipcRenderer } from "electron";
 
 interface IExportReport {
   options: any;
@@ -117,7 +116,7 @@ const ExportReport = ({ options, simInfo }: IExportReport) => {
 
   useEffect(() => {
     if (typeof simInfo !== "object") {
-      ipcRenderer
+      window.ipc
         .invoke("fetch-sim-metadata", {
           id: simInfo,
         })

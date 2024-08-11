@@ -1,6 +1,4 @@
-import { ipcRenderer } from "electron";
 import { useTheme } from "next-themes";
-import { Button } from "primereact/button";
 import React from "react";
 import { AppController } from "../../hooks/useContext-hooks/appcontroller-hook/appcontroller-hook";
 import { InputSwitch } from "primereact/inputswitch";
@@ -11,7 +9,7 @@ export default function ThemeManager() {
 
   const handleTheme = (newTheme) => {
     controller.setAppTheme(newTheme);
-    ipcRenderer.invoke("edit-preferences-file", {
+    window.ipc.invoke("edit-preferences-file", {
       key: "theme",
       value: newTheme,
     });

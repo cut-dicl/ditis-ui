@@ -31,7 +31,7 @@ export default function TableView({ results, selectedMetrics, print, slice }: Ta
   if (print) {
     return (
         groups.map((group) => {
-          return (<>
+          return (<div key={group}>
             <Table
               props={{
                 header: group, data: results, columns:
@@ -41,10 +41,9 @@ export default function TableView({ results, selectedMetrics, print, slice }: Ta
                       return { field: val, header: convertUnderlineToTitleCase(val).slice(group.length).trim() };
                     }), print, slice
               }}
-              key={group}
             />
             <div className="page-break"></div>
-            </>
+            </div>
           );
         })
     );

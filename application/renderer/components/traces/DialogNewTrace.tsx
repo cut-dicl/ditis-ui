@@ -2,7 +2,6 @@ import React from "react";
 import { Dialog } from "primereact/dialog";
 import { InputText } from "primereact/inputtext";
 import { Button } from "primereact/button";
-import { ipcRenderer } from "electron";
 import { AppController } from "../../hooks/useContext-hooks/appcontroller-hook/appcontroller-hook";
 
 interface DialogNewTraceProps {
@@ -47,7 +46,7 @@ export default function DialogNewTrace({
       setSubmitted(false);
       return;
     }
-    ipcRenderer
+    window.ipc
       .invoke("store-trace-file", {
         name: traceName, path: path
       }).then((result) => {        

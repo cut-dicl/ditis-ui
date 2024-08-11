@@ -4,7 +4,6 @@ import { AppController } from "../../hooks/useContext-hooks/appcontroller-hook/a
 import { Dropdown } from "primereact/dropdown";
 import { Checkbox } from "primereact/checkbox";
 import { Button } from "primereact/button";
-import { ipcRenderer } from "electron";
 import { useConfPage } from "../../hooks/custom-hooks/useConfPage";
 import { ProgressSpinner } from "primereact/progressspinner";
 import { useTraces } from "../../hooks/custom-hooks/useTraces";
@@ -177,7 +176,7 @@ const Simulator = () => {
         Swal.showLoading();
       },
     });
-    ipcRenderer
+    window.ipc
       .invoke("run-simulator", {
         trace: simulatorFormData.selectedTrace,
         configuration: simulatorFormData.selectedConfig,

@@ -5,7 +5,6 @@ import React, { useContext, useLayoutEffect, useRef, useState } from "react";
 import { AppController } from "../../hooks/useContext-hooks/appcontroller-hook/appcontroller-hook";
 import { Button } from "primereact/button";
 import ReportDialog from "../../components/simulator/ReportDialog";
-import { ipcRenderer } from "electron";
 import { reportWithProvider } from "../../hooks/HOC/withReportProvider";
 import { ReportContext } from "../../hooks/useContext-hooks/simulator-report-hook/simulator-report-hook";
 import { Toast } from "primereact/toast";
@@ -50,7 +49,7 @@ function SimulatorRuns() {
       configName: config,
       traceName: trace,
     });
-    ipcRenderer
+    window.ipc
       .invoke("fetch-report", {
         id,
       })
@@ -109,7 +108,7 @@ function SimulatorRuns() {
   };
 
   const accept = (row) => {
-    ipcRenderer
+    window.ipc
       .invoke("delete-simulation", {
         id: row.id,
       })
@@ -136,7 +135,7 @@ function SimulatorRuns() {
   };
 
   const reloadSimulation = (id) => {
-    ipcRenderer.invoke("refresh-simulation", {
+    window.ipc.invoke("refresh-simulation", {
       id,
       simulationMode: "Simulator",
     });
@@ -276,7 +275,7 @@ function SimulatorRuns() {
   }, []);
 
   const reload = () => {
-    ipcRenderer.invoke("fetch-simulations-list").then((result) => {
+    window.ipc.invoke("fetch-simulations-list").then((result) => {
       if (result.code === 500) {
         toast.current.show({
           severity: "error",
@@ -291,7 +290,7 @@ function SimulatorRuns() {
   };
 
   const handleMLFilesDownload = (row) => {
-    ipcRenderer
+    window.ipc
       .invoke("zip-files", {
         sim: "simulator",
         type: "ML files",

@@ -1,4 +1,3 @@
-import { ipcRenderer } from "electron";
 import { Divider } from "primereact/divider";
 import { InputSwitch } from "primereact/inputswitch";
 import React from "react";
@@ -11,7 +10,7 @@ export default function GeneralSettings() {
   const controller = React.useContext(AppController);
 
   React.useEffect(() => {
-    ipcRenderer
+    window.ipc
       .invoke("get-preferences-key", { key: "hardwareAcceleration" })
       .then((result) => {
         if (result == null)
@@ -34,13 +33,13 @@ export default function GeneralSettings() {
       background: document.documentElement.className.includes("dark") ? "#1f2937" : "",
     }).then((result) => {
       if (result.isConfirmed)
-        ipcRenderer.invoke("set-hardware-acceleration", { enabled });
+        window.ipc.invoke("set-hardware-acceleration", { enabled });
     });
   };
 
   const editDebug = (value) => {
     controller.setDebugEnabled(value);
-    ipcRenderer.invoke('edit-preferences-file', {key: "debugEnabled", value: value});
+    window.ipc.invoke('edit-preferences-file', {key: "debugEnabled", value: value});
   }
 
   return (
@@ -88,7 +87,7 @@ export default function GeneralSettings() {
       <Divider className="h-[1px] bg-gray-400" />
       <span>If you require any assistance, check out the manual below</span>
       <br />
-      <Button className="mt-2" onClick={() => ipcRenderer.invoke("open-manual")}>Open Manual</Button>
+      <Button className="mt-2" onClick={() => window.ipc.invoke("open-manual")}>Open Manual</Button>
     </div>
   );
 }

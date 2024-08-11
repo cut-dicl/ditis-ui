@@ -1,6 +1,6 @@
-import React, { createContext, use, useEffect, useLayoutEffect, useState } from 'react';
-import {useTheme} from "next-themes";
-import { ipcRenderer } from 'electron';
+import React, { createContext, use, useContext, useEffect, useLayoutEffect, useState } from 'react';
+import { useTheme } from "next-themes";
+import { PrimeReactContext } from 'primereact/api';
 
 
 export const AppController = createContext({
@@ -26,7 +26,7 @@ export const AppController = createContext({
     setDebugEnabled: (debugEnabled: boolean) => {},
 });
 
-export const AppControllerProvider = (props) =>{
+export const AppControllerProvider = (props) => {
     const [mode, setMode] = useState("Local");
     const {theme, setTheme} = useTheme();
     const [javaPath, setJavaPath] = useState("");
@@ -41,16 +41,17 @@ export const AppControllerProvider = (props) =>{
     const [appLoaded, setAppLoaded] = useState(false);
     const [debugEnabled, setDebugEnabled] = useState(false);
     const [username, setUsername] = useState("");
+    const {changeTheme} = useContext(PrimeReactContext);
 
 
     const handleSimulationPreference = (newPreference) => {
         setSimulationPreference(newPreference);
-        ipcRenderer.invoke('edit-preferences-file', {key: "simulationPreference", value: newPreference});
+        window.ipc.invoke('edit-preferences-file', {key: "simulationPreference", value: newPreference});
         setMode(newPreference);
     }
 
     useLayoutEffect(() => {
-        ipcRenderer.invoke('open-preferences-file').then((result) => {
+        window.ipc.invoke('open-preferences-file').then((result) => {
             result.javaPath ? setJavaPath(result.javaPath) : setJavaPath("");
             if (result.javaPath.length > 0)
                 setIsSimulatorInstalled(true);
@@ -77,15 +78,19 @@ export const AppControllerProvider = (props) =>{
             result.debugEnabled ? setDebugEnabled(result.debugEnabled) : setDebugEnabled(false);
             setAppLoaded(true);
         });
-    },[]);
+            },[]);
 
     useEffect(() => {
-        let themeLink = document.getElementById('prime-theme') as HTMLLinkElement;
-        if (appTheme === "light") 
-            themeLink.href = 'themes/lara-light-blue/theme.css';
-         else 
-            themeLink.href = 'themes/vela-blue/theme.css';
+        const link = document.createElement("link");
+        link.rel = "stylesheet";
+        link.href = appTheme === "dark" ?"/themes/vela-blue/theme.css": "/themes/lara-light-blue/theme.css";
+        document.head.appendChild(link);
+        
+        //changeTheme("themes/lara-light-blue/theme.css", "themes/lara-light-purple/theme.css");
         setTheme(appTheme === "dark" ? "dark" : "light");
+        return () => {
+            document.head.removeChild(link);
+            };
     }, [appTheme]);
 
 
@@ -100,21 +105,21 @@ export const AppControllerProvider = (props) =>{
             return;
         } 
         
-        ipcRenderer.invoke('get-server', { serverName: newServer }).then((result) => {
+        window.ipc.invoke('get-server', { serverName: newServer }).then((result) => {
             console.log(result);
             if (result === undefined) return;
             if (result.code == 500) {
                 return;
             }
 
-            ipcRenderer.invoke('edit-preferences-file', { key: "onlineServer", value: result.data });
+            window.ipc.invoke('edit-preferences-file', { key: "onlineServer", value: result.data });
             setOnlineServer(result.data);
         });
     }
 
 
     useEffect(() => {
-        ipcRenderer.invoke('get-server', { serverName: onlineServer.serverName }).then((result) => {
+        window.ipc.invoke('get-server', { serverName: onlineServer.serverName }).then((result) => {
             if (result === undefined) return;
             if (result.code == 500) {
                 return;

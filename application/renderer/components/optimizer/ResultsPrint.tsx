@@ -16,7 +16,6 @@ import {
 import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
 import { Tooltip } from "primereact/tooltip";
-import { ipcRenderer } from "electron";
 
 export default function ResultsPrint({
   optimization,
@@ -205,7 +204,7 @@ export default function ResultsPrint({
   React.useEffect(() => {
     if (optimization.id === undefined) return;
     if (!optimization.date || !optimization.trace || !optimization.configuration) {
-      ipcRenderer.invoke("get-optimizer-metadata", {
+      window.ipc.invoke("get-optimizer-metadata", {
         id: optimization.id
       }).then((result) => {
         if (result.code === 200) {

@@ -7,7 +7,6 @@ import React, {
   Suspense,
 } from "react";
 import { Dialog } from "primereact/dialog";
-import { ipcRenderer } from "electron";
 import { TabMenu } from "primereact/tabmenu";
 import { Toast } from "primereact/toast";
 import { AppController } from "../../hooks/useContext-hooks/appcontroller-hook/appcontroller-hook";
@@ -66,7 +65,7 @@ export function DialogResult({
   const ResultsPrint = React.lazy(() => import("./ResultsPrint"));
 
   useLayoutEffect(() => {
-    ipcRenderer
+    window.ipc
       .invoke("open-preferences-file", { key: "optimizer" })
       .then((result) => {
         if (!result) return;
@@ -87,7 +86,7 @@ export function DialogResult({
   useEffect(() => {
     setNoData(false);
     if (opt != null) {
-      ipcRenderer
+      window.ipc
         .invoke("get-optimizer-csv-file", {
           id: opt.id,
         })
@@ -139,7 +138,7 @@ export function DialogResult({
           setColumns(result.data.columns);
           setIsLoaded(true);
         });
-        ipcRenderer
+        window.ipc
         .invoke("fetch-optimizer-report", { id: opt.id })
         .then((result) => {
           if (result.code === 200) {
@@ -154,7 +153,7 @@ export function DialogResult({
   }, [opt]);
 
   const saveOptions = () => {
-    ipcRenderer.invoke("edit-preferences-file", {
+    window.ipc.invoke("edit-preferences-file", {
       key: "optimizer",
       value: {
         selectedColumn: selectedColumn,

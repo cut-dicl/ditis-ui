@@ -3,26 +3,25 @@ import { useContext, useEffect, useState } from "react";
 import { Tooltip } from "primereact/tooltip";
 import { ConfFormContext } from "../../../hooks/useContext-hooks/conf-form-hook/conf-form-hook";
 
-const VarianceBoolean = ({ selected, editValue, readOnly }) => {
-  const [varianceBooleanValue, setVarianceBooleanValue] = useState("");
+const VarianceBoolean = ({ selected, editValue, readOnly, editVarianceParameter, parameter, id, varianceObject }) => {
+  const [varianceBooleanValue, setVarianceBooleanValue] = useState(varianceObject.value);
   const VarFormCtx = useContext(ConfFormContext);
   const [firstRender, setFirstRender] = useState(true);
 
   const dropdownOptions = ["true", "false"];
 
-  const handleDropdownChange = (e) => {
-    setVarianceBooleanValue(e.target.value);
-  };
 
   useEffect(() => {
     if (firstRender) {
       setFirstRender(false);
     } else {
-      const inputObject = {
-        value: varianceBooleanValue.toString(),
-        header: selected,
-      };
-      VarFormCtx.handleVarianceObject(inputObject);
+      // const inputObject = {
+      //   value: varianceBooleanValue.toString(),
+      //   header: selected,
+      // };
+      // VarFormCtx.handleVarianceObject(inputObject);
+
+      editVarianceParameter({ id, param:parameter, value:varianceBooleanValue, type:"boolean"});
     }
   }, [varianceBooleanValue]);
 
@@ -51,7 +50,7 @@ const VarianceBoolean = ({ selected, editValue, readOnly }) => {
           options={dropdownOptions}
           placeholder="Select..."
           style={{ width: "160.57px" }}
-          onChange={handleDropdownChange}
+          onSelect={(e) => setVarianceBooleanValue(e.target.value)}
           disabled={readOnly}
         />
       </div>

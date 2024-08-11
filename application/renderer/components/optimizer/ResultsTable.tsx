@@ -6,7 +6,6 @@ import { InputSwitch } from 'primereact/inputswitch'
 import { MultiSelect } from 'primereact/multiselect'
 import { useTheme } from 'next-themes'
 import { Button } from 'primereact/button'
-import { ipcRenderer } from 'electron'
 import { AppController } from '../../hooks/useContext-hooks/appcontroller-hook/appcontroller-hook'
 
 export default function ResultsTable({ data, columns, optID, showToast }) {
@@ -18,7 +17,7 @@ export default function ResultsTable({ data, columns, optID, showToast }) {
 
 
   const downloadCSV = () => {
-    ipcRenderer.invoke('download-optimizer-csv', {
+    window.ipc.invoke('download-optimizer-csv', {
       optID
     }).then((res) => {
       console.log(res);
@@ -85,16 +84,13 @@ export default function ResultsTable({ data, columns, optID, showToast }) {
   
   const template = (rowData, column) => {
     //console.log(rowData, column);
-
-      if (rowData[column.field].includes('.')) {
+    if (Number.isNaN(Number(rowData[column.field]))) 
+      if (rowData[column.field].includes('.')) 
         // Split the string by dots and get the last element
         return rowData[column.field].split('.').pop();
-      } else {
-        // If there are no dots, return the original string
-        return rowData[column.field];
-      }
-    
-
+      
+    // If there are no dots, return the original string
+    return rowData[column.field];
   };
     
   return (

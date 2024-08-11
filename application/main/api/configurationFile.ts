@@ -26,6 +26,7 @@ const FormData = require("form-data");
 
 export function configurationIpc() {
   ipcMain.handle("create-config-file", async (event, arg) => {
+    console.log(arg);
     let response;
     let mode = getPreference("simulationPreference");
     let { address } = getPreference("onlineServer");
@@ -49,6 +50,7 @@ export function configurationIpc() {
     } else if (mode === "Local") {
       try {
         const confFile = arg.confObject;
+        console.log("53",confFile);
         const confName = arg.confName;
         const confDescription = arg.description
           ? arg.description
@@ -78,6 +80,7 @@ export function configurationIpc() {
           };
         }
       } catch (err) {
+        console.log(err);
         return { code: 500, message: err };
       }
     }

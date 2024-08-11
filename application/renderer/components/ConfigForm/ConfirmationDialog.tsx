@@ -3,7 +3,6 @@ import { Dialog } from "primereact/dialog";
 import React, { useContext, useState } from "react";
 import { InputTextarea } from "primereact/inputtextarea";
 import { Button } from "primereact/button";
-import { ipcRenderer } from "electron";
 import Swal from "sweetalert2";
 
 import { ConfFormContext } from "../../hooks/useContext-hooks/conf-form-hook/conf-form-hook";
@@ -32,7 +31,7 @@ export const ConfirmationDialog = (props: IConfigurationDialogProps) => {
   const app = useContext(AppController);
 
   const handleConfigFileCreation = (event) => {
-    ipcRenderer
+    window.ipc
       .invoke("create-config-file", {
         confObject: confFormCtx.configurationObject,
         confName: name,
@@ -53,7 +52,8 @@ export const ConfirmationDialog = (props: IConfigurationDialogProps) => {
   };
 
   const handleConfigFileUpdate = () => {
-    ipcRenderer
+    console.log(confFormCtx.configurationObject);
+    window.ipc
       .invoke("update-config-file", {
         confObject: confFormCtx.configurationObject,
         confName: name,

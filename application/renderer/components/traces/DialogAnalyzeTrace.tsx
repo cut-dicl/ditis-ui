@@ -8,7 +8,6 @@ import FileSizeChart from "./charts/FileSizeChart";
 import AppTimeChart from "./charts/AppTimeChart";
 import Statistics from "./charts/Statistics";
 import { ProgressSpinner } from "primereact/progressspinner";
-import { ipcRenderer } from "electron";
 import { AppController } from "../../hooks/useContext-hooks/appcontroller-hook/appcontroller-hook";
 import { Panel } from "primereact/panel";
 import FileStatistics from "./charts/FileStatistics";
@@ -51,7 +50,7 @@ export default function DialogAnalyzeTrace({
   ];
 
   useEffect(() => {
-      ipcRenderer
+      window.ipc
         .invoke("analyze-trace", {
           id: type === "simulator"? trace.id : trace.name+trace.extension,
           type,
@@ -65,7 +64,7 @@ export default function DialogAnalyzeTrace({
           }
           setAnalyzeResults(result.data);
 
-          ipcRenderer.invoke("get-trace-lines", {
+          window.ipc.invoke("get-trace-lines", {
             id: type === "simulator"? trace.id : trace.name+trace.extension, type,
             simID: simID? simID : null,
           }).then((result) => {

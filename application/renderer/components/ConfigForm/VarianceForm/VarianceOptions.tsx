@@ -1,6 +1,7 @@
 import { Dropdown, DropdownChangeEvent } from "primereact/dropdown";
 import { ConfigurationObjectType } from "../../../hooks/useContext-hooks/conf-form-hook/conf-form-hook-provider";
 import {
+  use,
   useContext,
   useEffect,
   useLayoutEffect,
@@ -17,23 +18,24 @@ import { ConfFormContext } from "../../../hooks/useContext-hooks/conf-form-hook/
 
 interface IVarianceOptions {
   id: number;
-  remove: any;
   varianceSettings: any;
-  setButtonDisabled: any;
+  editVarianceParameter: any;
+  deleteVarianceParameter: any;
+  varianceObject: any;
+  saveDisabled?: boolean;
+  setSaveDisabled?: any;
 }
 
 export const VarianceOptions = ({
-  remove,
   id,
   varianceSettings,
-  setButtonDisabled,
+  editVarianceParameter,
+  deleteVarianceParameter,
+  varianceObject,
+  saveDisabled,
+  setSaveDisabled,
 }: IVarianceOptions) => {
-  const [selectedLayer, setSelectedLayer] = useState("");
-  const [selectedOption, setSelectedOption] = useState("");
   const [layerOptions, setLayerOptions] = useState([]);
-  const [hasAlternatives, setHasAlternatives] = useState(false);
-  const [isClass, setIsClass] = useState(false);
-  const [isBoolean, setIsBoolean] = useState(false);
   const [classOptions, setClassOptions] = useState([]);
   const VarFormCtx = useContext(ConfFormContext);
   const options = VarFormCtx.varianceOptions;
@@ -43,52 +45,66 @@ export const VarianceOptions = ({
     return item[0];
   });
 
-  const optionItem = VarFormCtx.varianceObject.variance[id - 1];
 
-  useLayoutEffect(() => {
-    if (optionItem && Object.keys(varianceSettings).length > 0) {
-      if (optionItem.key.includes("storage.system.report")) {
-        handleLayerChange({ target: { value: "Report" } }, true);
-      } else if (optionItem.key.includes("storage.system")) {
-        handleLayerChange({ target: { value: "Storage" } }, true);
-      } else if (optionItem.key.includes("data.profiler")) {
-        handleLayerChange({ target: { value: "Profiler" } }, true);
-      } else if (optionItem.key.includes("network")) {
-        handleLayerChange({ target: { value: "Network" } }, true);
-      } else if (optionItem.key.includes("workload")) {
-        handleLayerChange({ target: { value: "Workload" } }, true);
-      } else if (optionItem.key.includes("access")) {
-        handleLayerChange({ target: { value: "Access" } }, true);
-      } else if (optionItem.key.includes("file.home")) {
-        handleLayerChange({ target: { value: "FileHome" } }, true);
-      } else if (optionItem.key.includes("storage.tiering")) {
-        handleLayerChange({ target: { value: "Tiering" } }, true);
-      } else if (optionItem.key.includes("redundancy")) {
-        handleLayerChange({ target: { value: "Redundancy" } }, true);
-      } else if (optionItem.key.includes("hot.tier")) {
-        handleLayerChange({ target: { value: "Hot Tier" } }, true);
-      } else if (optionItem.key.includes("warm.tier")) {
-        handleLayerChange({ target: { value: "Warm Tier" } }, true);
-      } else if (optionItem.key.includes("cold.tier")) {
-        handleLayerChange({ target: { value: "Cold Tier" } }, true);
-      } else if (optionItem.key.includes("persistence.layer")) {
-        handleLayerChange({ target: { value: "Persistence" } }, true);
-      }
-    }
-  }, []);
 
   useEffect(() => {
     if (firstRender.current) {
       firstRender.current = false;
     } else {
-      if (optionItem && Object.keys(varianceSettings).length > 0) {
-        handleOptionChange({ target: { value: optionItem.key } });
+      if (varianceObject.parameters[id] && Object.keys(varianceObject.parameters).length > 0) {
+        if(varianceObject.parameters[id].parameter.length>0)
+          handleOptionChange({ target: { value: varianceObject.parameters[id].parameter } }, true);
       }
     }
-  }, [selectedLayer]);
+  }, [varianceObject.parameters[id].layer]);
+
+
+  useEffect(() => {
+    if (varianceObject.parameters[id] && Object.keys(varianceObject.parameters).length > 0) {
+      if (varianceObject.parameters[id].parameter === "") {
+        return;
+      } else if (varianceObject.parameters[id].parameter.includes("storage.system.report")) {
+        handleLayerChange({ target: { value: "Report" } }, true);
+      } else if (varianceObject.parameters[id].parameter.includes("storage.system")) {
+        handleLayerChange({ target: { value: "Storage" } }, true);
+      } else if (varianceObject.parameters[id].parameter.includes("data.profiler")) {
+        handleLayerChange({ target: { value: "Profiler" } }, true);
+      } else if (varianceObject.parameters[id].parameter.includes("network")) {
+        handleLayerChange({ target: { value: "Network" } }, true);
+      } else if (varianceObject.parameters[id].parameter.includes("workload")) {
+        handleLayerChange({ target: { value: "Workload" } }, true);
+      } else if (varianceObject.parameters[id].parameter.includes("access")) {
+        handleLayerChange({ target: { value: "Access" } }, true);
+      } else if (varianceObject.parameters[id].parameter.includes("file.home")) {
+        handleLayerChange({ target: { value: "FileHome" } }, true);
+      } else if (varianceObject.parameters[id].parameter.includes("storage.tiering")) {
+        handleLayerChange({ target: { value: "Tiering" } }, true);
+      } else if (varianceObject.parameters[id].parameter.includes("redundancy")) {
+        handleLayerChange({ target: { value: "Redundancy" } }, true);
+      } else if (varianceObject.parameters[id].parameter.includes("hot.tier")) {
+        handleLayerChange({ target: { value: "Hot Tier" } }, true);
+      } else if (varianceObject.parameters[id].parameter.includes("warm.tier")) {
+        handleLayerChange({ target: { value: "Warm Tier" } }, true);
+      } else if (varianceObject.parameters[id].parameter.includes("cold.tier")) {
+        handleLayerChange({ target: { value: "Cold Tier" } }, true);
+      } else if (varianceObject.parameters[id].parameter.includes("persistence.layer")) {
+        handleLayerChange({ target: { value: "Persistence" } }, true);
+      }
+    }
+  }, [varianceObject.parameters[id].parameter]);
+
+  // useEffect(() => {
+  //   console.log("selectedOption", selectedOption);
+  // }, [selectedOption]);
 
   const handleLayerChange = (event, skipRemoval?): void => {
-    setSelectedLayer(event.target.value);
+    if (!skipRemoval) {
+      VarFormCtx.handleRemoval(varianceObject.parameters[id].parameter, varianceObject.parameters[id].layer);
+      editVarianceParameter({ id, layer: event.target.value, param: "", value: "", type: "", domain: "", disabled:false });
+    } else 
+      editVarianceParameter({id, layer: event.target.value });
+    // if (varianceObject.parameters[id].parameter !=="")
+      // editVarianceParameter({ id, param: "", value: "", type: "", domain: "" });
     Object.entries(options).map((item) => {
       if (item[0] === event.target.value) {
         if (Array.isArray(item[1])) {
@@ -101,53 +117,60 @@ export const VarianceOptions = ({
     });
   };
 
-  const handleOptionChange = (event): void => {
+  const handleOptionChange = (event, load?): void => {
+
+    let type;
     VarFormCtx.handleVarianceOptionsChange(
-      selectedLayer,
+      varianceObject.parameters[id].layer,
       event.target.value,
-      selectedOption
+      varianceObject.parameters[id].parameter
     );
+    if (!load)
+      editVarianceParameter({ id, param: event.target.value, value: "", type: "", domain: "", disabled:false });
 
-    if (selectedLayer !== "Storage") {
-      const answer = Object.entries(options).find((item) => {
-        if (item[0] === selectedLayer) {
-          return item;
-        }
-      });
+    const answer = Object.entries(options).find((item) => {
+      if (item[0] === varianceObject.parameters[id].layer) {
+        return item;
+      }
+    });
 
-      // and here im getting the array of alternatives that has to do with the selected option
+    // and here im getting the array of alternatives that has to do with the selected option
+    if (!Array.isArray(answer[1])) {
+      setClassOptions([]);
+      if (event.target.value)
+        type = "number"
+    } else {
       const alternativesExist = answer[1].find((item) => {
         if (item.label === event.target.value) {
           return item;
         }
       });
-
+  
       if (alternativesExist) {
         if ("alternatives" in alternativesExist) {
           setClassOptions(alternativesExist.alternatives);
-          setHasAlternatives(true);
-          if (event.target.value.includes("class")) setIsClass(true);
+          if (event.target.value.includes("class"))
+            type = "class";
+          else type = "alternatives";
+        
         } else if (event.target.value.includes("enabled")) {
-          setIsBoolean(true);
+          type = "boolean";
         } else {
-          setIsBoolean(false);
-          setHasAlternatives(false);
-          setIsClass(false);
+          type = "number";
         }
       }
     }
 
+    
+
     // Here i remove the previous option because the state will update in the code below
-    VarFormCtx.handleRemoval(selectedOption, selectedLayer);
-    setSelectedOption(event.target.value);
+    //VarFormCtx.handleRemoval(selectedOption, varianceObject.parameters[id].layer);
+    editVarianceParameter({ id, param: event.target.value, type});
   };
 
   const handleOptionRemoval = () => {
-    remove(id);
-    setSelectedLayer("");
-    setSelectedOption("");
-    setLayerOptions([]);
-    VarFormCtx.handleRemoval(selectedOption, selectedLayer);
+    deleteVarianceParameter(id, varianceObject.parameters[id].parameter);
+    VarFormCtx.handleRemoval(varianceObject.parameters[id].parameter, varianceObject.parameters[id].layer);
   };
 
   const parameterOptionsTemplate = (availableOptions) => {
@@ -159,7 +182,7 @@ export const VarianceOptions = ({
   };
 
   return (
-    <div className="flex justify-between items-end mt-5">
+    <div className={"flex justify-between items-end mt-5"} key={id}>
       <div className="flex gap-10 grow">
         <div className="flex flex-col">
           <Tooltip target=".pi-question-circle" />
@@ -173,7 +196,7 @@ export const VarianceOptions = ({
           </label>
           <Dropdown
             placeholder="Select a category"
-            value={selectedLayer}
+            value={varianceObject.parameters[id].layer}
             options={dropdownValues}
             onChange={handleLayerChange}
             disabled={varianceSettings.readOnly}
@@ -191,7 +214,7 @@ export const VarianceOptions = ({
           </label>
           <Dropdown
             className="w-80"
-            value={selectedOption}
+            value={varianceObject.parameters[id].parameter}
             options={layerOptions}
             placeholder="Select a parameter"
             onChange={handleOptionChange}
@@ -199,41 +222,44 @@ export const VarianceOptions = ({
             disabled={varianceSettings.readOnly}
           />
         </div>
-        {selectedOption.length > 0 ? (
-          hasAlternatives ? (
+        {varianceObject.parameters[id].parameter.length > 0 ? (
+          varianceObject.parameters[id].type === "alternatives" || varianceObject.parameters[id].type === "class" ? (
             <VarianceClassOption
               readOnly={varianceSettings.readOnly}
-              selected={selectedOption}
+              selected={varianceObject.parameters[id].parameter}
               foundOption={classOptions}
-              isClass={isClass}
-              editValue={
-                optionItem &&
-                Object.keys(varianceSettings).length > 0 &&
-                optionItem.value
-              }
+              isClass={varianceObject.parameters[id].type === "class"}
+              editVarianceParameter={editVarianceParameter}
+              parameter={varianceObject.parameters[id].parameter}              
+              id={id}
+              varianceObject={varianceObject.parameters[id]}
             />
-          ) : isBoolean ? (
+          ) : varianceObject.parameters[id].type === "boolean" ? (
             <VarianceBoolean
               readOnly={varianceSettings.readOnly}
-              selected={selectedOption}
+              selected={varianceObject.parameters[id].parameter}
               editValue={
-                optionItem &&
+                varianceObject.parameters[id] &&
                 Object.keys(varianceSettings).length > 0 &&
-                optionItem.value
+                varianceObject.parameters[id].value
               }
+              editVarianceParameter={editVarianceParameter}
+                parameter={varianceObject.parameters[id].parameter}                
+                id={id}
+                varianceObject={varianceObject.parameters[id]}
             />
-          ) : (
+          ) : varianceObject.parameters[id].type === "number" ? (
             <VarianceNumberOption
               readOnly={varianceSettings.readOnly}
-              varianceOption={selectedOption}
-              setButtonDisabled={setButtonDisabled}
-              editValue={
-                optionItem &&
-                Object.keys(varianceSettings).length > 0 &&
-                optionItem.value
-              }
+              varianceOption={varianceObject.parameters[id].parameter}
+              editVarianceParameter={editVarianceParameter}
+                  parameter={varianceObject.parameters[id].parameter}
+                  id={id}
+                  varianceObject={varianceObject.parameters[id]}
+                  saveDisabled={saveDisabled}
+                  setSaveDisabled={setSaveDisabled}
             />
-          )
+          ) : null
         ) : null}
       </div>
       <Button

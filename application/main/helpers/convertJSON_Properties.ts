@@ -49,7 +49,7 @@ export async function convertProperties_Json(
 }
 
 export async function convertJSON_Properties_Variance(obj: any):Promise<string> {
-  console.log(obj);
+  console.log(Object.entries(obj));
   let properties = "";
   Object.entries(obj).forEach(
     (item: [string, Array<{ key: string; value: string }>]) => {

@@ -1,4 +1,3 @@
-import { ipcRenderer } from "electron";
 import { Button } from "primereact/button";
 import { Divider } from "primereact/divider";
 import { InputText } from "primereact/inputtext";
@@ -31,7 +30,7 @@ export default function AddServer({ setServers, showToast }) {
       showSwalWithButton("Error", "Please fill in all fields", "error", "Ok");
       return;
     }
-    ipcRenderer
+    window.ipc
       .invoke("add-server", { serverName, username, password, address })
       .then((result) => {
         if (result === undefined || result === true) return;
@@ -79,7 +78,7 @@ export default function AddServer({ setServers, showToast }) {
     ) {
       return;
     }
-    ipcRenderer
+    window.ipc
       .invoke("create-account", {
         key,
         username,
@@ -134,7 +133,7 @@ export default function AddServer({ setServers, showToast }) {
             label="Ping Server"
             className="w-[200px] mt-5"
             onClick={() => {
-              ipcRenderer
+              window.ipc
                 .invoke("ping-server", {
                   address: (document.getElementById("server-address") as HTMLInputElement).value,
                 })

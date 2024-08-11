@@ -7,40 +7,40 @@ interface IVarianceClassOption {
   selected: any;
   foundOption: string[];
   isClass: boolean;
-  editValue: string;
   readOnly: boolean;
+  editVarianceParameter: any;
+  id: number;
+  varianceObject: any;
+  parameter: string;
 }
 
 export const VarianceClassOption = ({
   selected,
   foundOption,
-  editValue,
   isClass,
   readOnly,
+  editVarianceParameter,
+  id,
+  parameter,
+  varianceObject
 }: IVarianceClassOption) => {
-  const [varianceClassOptions, setVarianceClassOptions] = useState([]);
-  const VarFormCtx = useContext(ConfFormContext);
 
   const handleClasses = (e): void => {
-    setVarianceClassOptions(e.target.value);
+    editVarianceParameter({ id, param: parameter, value: e.target.value, type: "class" });
   };
 
-  useEffect(() => {
-    const inputObject = {
-      value: varianceClassOptions.toString(),
-      header: selected,
-    };
-    VarFormCtx.handleVarianceObject(inputObject);
-  }, [varianceClassOptions]);
 
-  useEffect(() => {
-    if (editValue) {
-      editValue = editValue.replace("[", "");
-      editValue = editValue.replace("]", "");
-      const arr = editValue.split(",");
-      setVarianceClassOptions(arr);
+  const getValue = (value) => {
+    let arr = [];
+    if (value && typeof value === "string") {
+      value = value.replace("[", "").replace("]", "");
+      arr = value.split(",");
+    } else if (value && Array.isArray(value)){
+      arr = value;
     }
-  }, []);
+    return arr;
+  }
+
 
   return (
     <>
@@ -65,7 +65,7 @@ export const VarianceClassOption = ({
           name={selected}
           key={selected}
           options={foundOption}
-          value={varianceClassOptions}
+          value={getValue(varianceObject.value)}
           onChange={handleClasses}
           disabled={readOnly}
         />

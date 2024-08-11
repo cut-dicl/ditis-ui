@@ -1,10 +1,6 @@
 import { MultiSelect, MultiSelectChangeEvent } from "primereact/multiselect";
 import {
   useContext,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
 } from "react";
 import { Tooltip } from "primereact/tooltip";
 import { Dropdown } from "primereact/dropdown";
@@ -17,69 +13,69 @@ interface IGroupingOptions {
   varianceSettings: any;
 }
 
-export const GroupingOptions = ({ id, remove, varianceSettings }) => {
-  const [selectedGroupingOptions, setSelectedGroupingOptions] = useState([]);
+export const GroupingOptions = ({ id, remove, varianceSettings, varianceObject, editVarianceGrouping }) => {
   const VarFormCtx = useContext(ConfFormContext);
 
   const handleGrouping = (e: MultiSelectChangeEvent) => {
-    VarFormCtx.handleGroupingOptionsChange(
-      e.target.value,
-      selectedGroupingOptions
-    );
-    setSelectedGroupingOptions(e.target.value);
-    const inputObject = {
-      header: "grouping",
-      value: e.target.value.toString(),
-    };
+    editVarianceGrouping(id, e.target.value);
+    // VarFormCtx.handleGroupingOptionsChange(
+    //   e.target.value,
+    //   selectedGroupingOptions
+    // );
+    // const inputObject = {
+    //   header: "grouping",
+    //   value: e.target.value.toString(),
+    // };
 
-    VarFormCtx.handleGroupingAdd(inputObject);
+    // VarFormCtx.handleGroupingAdd(inputObject);
   };
 
-  useEffect(() => {
-    let updatedOptions = [];
 
-    selectedGroupingOptions.map((item) => {
-      VarFormCtx.varianceGroupings.forEach((elem) => {
-        if (item === elem.label) {
-          updatedOptions.push(item);
-        }
-      });
-    });
-
-    setSelectedGroupingOptions(updatedOptions);
-  }, [VarFormCtx.varianceGroupings]);
-
-  useEffect(() => {
-    if (
-      varianceSettings &&
-      VarFormCtx.varianceObject.variance.length > 0 &&
-      Object.keys(varianceSettings).length > 0
-    ) {
-      const optionItem = VarFormCtx.varianceObject.variance[id - 1];
-      if (optionItem) {
-        const values = optionItem.value.replace(/[\[\]]/g, "").split(",");
-        setSelectedGroupingOptions(values);
-      }
-    }
-  }, []);
 
   const options = () => {
-    const myOptions = JSON.parse(JSON.stringify(VarFormCtx.varianceGroupings));
+    // const myOptions = JSON.parse(JSON.stringify(VarFormCtx.varianceGroupings));
 
-    myOptions.forEach((item) => {
-      selectedGroupingOptions.forEach((val) => {
-        if (val === item.label) {
-          item.disabled = false;
-        }
-      });
-    });
+    // let availableOptions = [];
+    // let takenOptions = [];
+    // VarFormCtx.varianceObject.variance.forEach(
+    //   (item) => item.key !== "grouping"? availableOptions.push(item.key): takenOptions.push(item.value)
+    // );
+    
+    // takenOptions = takenOptions.map((item) =>
+    //   item.replace(/[\[\]]/g, "").split(",")
+    // )[0];
+    // availableOptions.forEach((item) => {
+    //   if (!myOptions.find((elem) => elem.label === item)) {
+    //     myOptions.push({
+    //       label: item, value: item, disabled: 
+    //       takenOptions.includes(item) ? true : false,
+    //      });
+    //   }
+    // });
+    // myOptions.forEach((item) => {
+    //   selectedGroupingOptions.forEach((val) => {
+    //     if (val === item.label) {
+    //       item.disabled = false;
+    //     }
+    //   });
+    // });
 
-    return myOptions;
+    // return myOptions;
+    let options = [];
+    varianceObject.parameters.forEach((item) => {
+      if (item.parameter.length == 0) return;
+      options.push({
+        label: item.parameter, value: item.parameter, disabled: 
+        //check if the parameter exists in the groupings index with this id
+        varianceObject.groupings[id] && varianceObject.groupings[id].includes(item.parameter) ? false : item.disabled,
+         });
+    })
+    return options;
   };
 
   const handleGroupingRemoval = () => {
     remove(id);
-    VarFormCtx.handleGroupingRemoval(selectedGroupingOptions);
+    VarFormCtx.handleGroupingRemoval(id);
   };
 
   const groupingOptionsTemplate = (availableOptions) => {
@@ -104,7 +100,7 @@ export const GroupingOptions = ({ id, remove, varianceSettings }) => {
         </label>
         <MultiSelect
           placeholder="Select options to group"
-          value={selectedGroupingOptions}
+          value={varianceObject.groupings[id]}
           options={options()}
           onChange={handleGrouping}
           itemTemplate={groupingOptionsTemplate}

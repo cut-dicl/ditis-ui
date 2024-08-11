@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { ConfFormContext } from "./conf-form-hook";
 import { Content } from "../../../components/ConfigForm/FormInput";
@@ -110,7 +110,7 @@ export const ConfFormContextProvider = ({ children }) => {
         ];
       return prev;
     });
-    setVarianceObject({ ...dummyObject });
+    //setVarianceObject({ ...dummyObject });
   };
 
   const handleGroupingAdd = (inputObject) => {
@@ -138,7 +138,7 @@ export const ConfFormContextProvider = ({ children }) => {
         key: inputObject.header,
       });
     }
-    setVarianceObject({ ...dummy });
+    //setVarianceObject({ ...dummy });
   };
 
   const handleRemoval = (key, selectedLayer) => {
@@ -163,8 +163,9 @@ export const ConfFormContextProvider = ({ children }) => {
       }
     });
 
+
     if (selectedLayer === "Storage") {
-      //todo
+      varianceOptions[selectedLayer].disabled = false;
     } else {
       if (selectedLayer) {
         varianceOptions[selectedLayer].forEach((item) => {
@@ -177,8 +178,8 @@ export const ConfFormContextProvider = ({ children }) => {
 
     const removed = varianceGroupings.filter((item) => item.label !== key);
 
-    setVarianceGroupings(removed);
-    setVarianceObject({ ...dummy });
+    //setVarianceGroupings(removed);
+    //setVarianceObject({ ...dummy });
   };
 
   const handleGroupingOptionsChange = (optionKey, previousOption) => {
@@ -203,19 +204,18 @@ export const ConfFormContextProvider = ({ children }) => {
     }
   };
 
-  const handleGroupingRemoval = (props) => {
-    const dummy = { ...varianceObject };
-    dummy.variance = dummy.variance.filter(
-      (item) => item.value !== "[" + props + "]"
-    );
-
-    setVarianceObject({ ...dummy });
-
-    props.forEach((val) => {
-      varianceGroupings.forEach((item) => {
-        if (item.label === val) item.disabled = false;
+  const handleGroupingRemoval = (id) => {
+    setVarianceObject(prev => {
+      prev.variance[id-1]?.value.replace(/[\[\]]/g, "").split(",").forEach((val) => {
+        if (varianceGroupings.length === 0) return;
+        varianceGroupings.forEach((item) => {
+          if (item.label === val) item.disabled = false;
+        });
       });
-    });
+      prev.variance.splice(id - 1, 1);
+      return { ...prev };
+    })
+    //pop the element of the id-1
   };
 
   const handleInitialUpdateState = (varianceSettingsObject) => {
@@ -229,13 +229,20 @@ export const ConfFormContextProvider = ({ children }) => {
           groupingsArr.push({ label: val, value: val, disabled: true });
         });
       });
+    
+    if (groupingsArr.length === 0) {
+      groupingsArr = varianceSettingsObject.map((item) => {
+        return { label: item.key, value: item.key, disabled: false };
+      });
+    }
 
-    setVarianceGroupings(groupingsArr);
-    setVarianceObject({ ...varianceObject, variance: varianceSettingsObject });
+    //setVarianceGroupings(groupingsArr);
+    //setVarianceObject({ ...varianceObject, variance: varianceSettingsObject });
   };
 
   const resetVarianceObject = () => {
     setVarianceObject({ variance: [] });
+    setVarianceGroupings([]);
   };
 
   const handlePreviousButton = (): void => {
@@ -280,6 +287,8 @@ export const ConfFormContextProvider = ({ children }) => {
 
   const resetFormState = (): void => {
     setConfigurationObject({});
+    setVarianceGroupings([]);
+    setVarianceObject({ variance: [] });
   };
 
   const handleConfTabIndex = (indexValue: number): void => {

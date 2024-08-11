@@ -1,6 +1,5 @@
 import React, { useContext, useEffect, useState } from "react";
 import { ProgressSpinner } from "primereact/progressspinner";
-import { ipcRenderer } from "electron";
 import { ConfigurationObjectType } from "../../../hooks/useContext-hooks/conf-form-hook/conf-form-hook-provider";
 import { MultiSelect, MultiSelectChangeEvent } from "primereact/multiselect";
 import { Divider } from "primereact/divider";
@@ -22,31 +21,40 @@ import { ConfFormContext } from "../../../hooks/useContext-hooks/conf-form-hook/
 interface IVarianceForm {
   showForm: React.Dispatch<React.SetStateAction<configurationContentShown>>;
   varianceSettings: any;
+  resetVarianceSettings: () => void;
 }
 
-export const VarianceForm = ({ showForm, varianceSettings }: IVarianceForm) => {
+export const VarianceForm = ({
+  showForm,
+  varianceSettings,
+  resetVarianceSettings,
+}: IVarianceForm) => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [showDialog, setShowDialog] = useState(false);
   const VarFormCtx = useContext(ConfFormContext);
-  const [disabledButton, setButtonDisabled] = useState(false);
   const appmode = useContext(AppController);
+  const [saveDisabled, setSaveDisabled] = useState(false);
 
   const {
-    varianceOptionsCounter,
-    groupingCounter,
+    varianceObject,
     varianceFileInformation,
+    editVarianceParameter,
+    editVarianceGrouping,
+    deleteVarianceParameter,
     handleFormSubmission,
     handleVarianceAdd,
     handleGroupingAdd,
-    removeVarianceOption,
     removeGroupingOption,
     handleVarianceFileInformation,
-  } = useVarianceForm({ showForm, varianceSettings, setShowDialog });
-
-  let isButtonDisabled = VarFormCtx.varianceObject.variance.length === 0;
+  } = useVarianceForm({
+    showForm,
+    varianceSettings,
+    setShowDialog,
+    resetVarianceSettings,
+  });
 
   useEffect(() => {
-    ipcRenderer
+    window.ipc
       .invoke("get-default-config", {
         javaPath: appmode.javaPath,
         mode: appmode.mode,
@@ -122,6 +130,7 @@ export const VarianceForm = ({ showForm, varianceSettings }: IVarianceForm) => {
     }).then((result) => {
       if (result.isConfirmed) {
         VarFormCtx.resetVarianceObject();
+        resetVarianceSettings();
         showForm("none");
       }
     });
@@ -140,7 +149,39 @@ export const VarianceForm = ({ showForm, varianceSettings }: IVarianceForm) => {
   const footerContent = (
     <Button
       severity="secondary"
-      onClick={handleFormSubmission}
+      onClick={() => {
+        try {
+          handleFormSubmission();
+        } catch (e) {
+          Swal.fire({
+            icon: "warning",
+            title: "Invalid Configuration",
+            html:
+              e.message === "1"
+                ? `<b>One or more parameters are invalid.</b> <br/> 
+            (e.g. a parameter has an empty value or a category was selected but without a parameter)<br/><br/> 
+            Ignoring will save the configuration without the invalid parameters.<br/>
+            <i>Note: If the parameter is in a group, it will be removed from the grouping.</i>`
+                : `<b>One or more groupings are invalid.</b> <br/>
+            (e.g. a grouping was left empty)
+            <br/><br/>
+            Ignoring will save the configuration without the invalid groupings.`,
+            color: document.documentElement.className.includes("dark")
+              ? "white"
+              : "",
+            background: document.documentElement.className.includes("dark")
+              ? "#1f2937"
+              : "",
+            showConfirmButton: true,
+            showCancelButton: true,
+            confirmButtonText: "Ignore",
+            confirmButtonColor: "#f59542",
+            reverseButtons: true,
+          }).then((result) => {
+            if (result.isConfirmed) handleFormSubmission(true);
+          });
+        }
+      }}
       disabled={varianceFileInformation.name.length === 0}
     >
       Save
@@ -154,14 +195,17 @@ export const VarianceForm = ({ showForm, varianceSettings }: IVarianceForm) => {
         <Divider />
         <h1 className="text-4xl mb-5">Specify parameter domains</h1>
 
-        {varianceOptionsCounter.map((item, index) => {
+        {Object.keys(varianceObject.parameters).map((key, index) => {
           return (
             <VarianceOptions
-              key={item.id}
-              id={item.id}
-              remove={removeVarianceOption}
+              key={index}
+              id={index}
               varianceSettings={varianceSettings}
-              setButtonDisabled={setButtonDisabled}
+              editVarianceParameter={editVarianceParameter}
+              deleteVarianceParameter={deleteVarianceParameter}
+              varianceObject={varianceObject}
+              saveDisabled={saveDisabled}
+              setSaveDisabled={setSaveDisabled}
             />
           );
         })}
@@ -174,6 +218,7 @@ export const VarianceForm = ({ showForm, varianceSettings }: IVarianceForm) => {
               : "black",
             marginTop: "10px",
             marginBottom: "20px",
+            marginLeft: "5px",
           }}
           label="Add"
           icon="pi pi-plus"
@@ -182,13 +227,15 @@ export const VarianceForm = ({ showForm, varianceSettings }: IVarianceForm) => {
         />
 
         <h1 className="text-4xl mb-5">Specify parameter groupings</h1>
-        {groupingCounter.map((item) => {
+        {varianceObject.groupings.map((item, index) => {
           return (
             <GroupingOptions
-              key={item.id}
-              id={item.id}
+              key={index}
+              id={index}
               remove={removeGroupingOption}
               varianceSettings={varianceSettings}
+              varianceObject={varianceObject}
+              editVarianceGrouping={editVarianceGrouping}
             />
           );
         })}
@@ -200,6 +247,7 @@ export const VarianceForm = ({ showForm, varianceSettings }: IVarianceForm) => {
               : "black",
             marginTop: "10px",
             marginBottom: "20px",
+            marginLeft: "5px",
           }}
           className="hover:!bg-slate-300"
           label="Add"
@@ -209,10 +257,15 @@ export const VarianceForm = ({ showForm, varianceSettings }: IVarianceForm) => {
         />
         <Divider />
       </div>
+      <Divider />
       <div className="flex justify-center space-x-8">
         <button
           className="bg-gray-100 shadow-md hover:bg-gray-400 hover:dark:bg-gray-600 text-black dark:text-white dark:bg-[#313e4f] font-bold py-2 px-4 border border-gray-900 rounded"
-          onClick={handleCancelButton}
+          onClick={
+            varianceSettings.readOnly
+              ? () => showForm("none")
+              : () => handleCancelButton()
+          }
         >
           {varianceSettings.readOnly ? "Back" : "Cancel"}
         </button>
@@ -220,8 +273,11 @@ export const VarianceForm = ({ showForm, varianceSettings }: IVarianceForm) => {
           className="bg-gray-100 shadow-md hover:bg-gray-400 hover:dark:bg-gray-600 text-black dark:text-white dark:bg-[#313e4f] font-bold py-2 px-4 border border-gray-900 rounded"
           label="Save"
           disabled={
-            isButtonDisabled || varianceSettings.readOnly || disabledButton
+            varianceObject.parameters.length === 0 ||
+            varianceSettings.readOnly ||
+            saveDisabled
           }
+          tooltip={"Save Configuration"}
           onClick={() => setShowDialog(true)}
         />
       </div>

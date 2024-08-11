@@ -1,6 +1,5 @@
 import React, { useContext, useLayoutEffect, useRef, useState } from "react";
 import Head from "next/head";
-import { ipcRenderer } from "electron";
 import { Divider } from "primereact/divider";
 import { AppController } from "../../hooks/useContext-hooks/appcontroller-hook/appcontroller-hook";
 import { Toast } from "primereact/toast";
@@ -29,7 +28,7 @@ function Preferences() {
   }, []);
 
   const getServers = () => {
-    ipcRenderer.invoke("get-servers").then((result) => {
+    window.ipc.invoke("get-servers").then((result) => {
       if (result === undefined) return;
       if (result.code == 500) {
         showToast("Error", "Failed to get servers", "error");
@@ -37,7 +36,7 @@ function Preferences() {
       }
 
       const servers = result.data.map((server) => {
-        ipcRenderer
+        window.ipc
           .invoke("ping-server", { address: server.address })
           .then((result) => {
             if (result === undefined) return;
@@ -85,7 +84,7 @@ function Preferences() {
 
       <div className="p-5 flex flex-col">
         <SimulatorPreference showToast={showToast} servers={servers} />
-        <Divider className="h-[1px] bg-gray-400" />
+        <Divider />
         {controller.mode === "Local" && (
           <>
             <InstallSimulator
@@ -94,14 +93,14 @@ function Preferences() {
               showToast={showToast}
               servers={servers}
             />
-            <Divider className="h-[1px] bg-gray-400" />
+            <Divider />
             <SimulatorPath />
           </>
         )}
         {controller.mode === "Online" && (
           <>
             <AddServer setServers={setServers} showToast={showToast} />
-            <Divider className="h-[1px] bg-gray-400" />
+            <Divider />
             <EditServer
               servers={servers}
               setServers={setServers}
@@ -113,7 +112,7 @@ function Preferences() {
 
         <Divider className="h-[1px] bg-gray-400" />
         <ThemeManager />
-        <Divider className="h-[1px] bg-gray-400" />
+        <Divider />
         <GeneralSettings />
       </div>
     </div>

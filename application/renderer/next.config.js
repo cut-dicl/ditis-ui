@@ -1,10 +1,10 @@
+/** @type {import('next').NextConfig} */
 module.exports = {
-  webpack: (config, { isServer }) => {
-    if (!isServer) {
-      config.target = 'electron-renderer';
-    }
-
-    return config;
+  output: 'export',
+  distDir: process.env.NODE_ENV === 'production' ? '../app' : '.next',
+  trailingSlash: true,
+  images: {
+    unoptimized: true,
   },
   typescript: {
     // !! WARN !!
@@ -13,4 +13,7 @@ module.exports = {
     // !! WARN !!
     ignoreBuildErrors: true,
   },
-};
+  webpack: (config) => {
+    return config
+  },
+}

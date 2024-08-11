@@ -2,7 +2,6 @@ import React from "react";
 import ConfigurationForm from "../ConfigForm/ConfigurationForm";
 import { IConfSettings } from "../../pages/configurations";
 import { ConfigurationMode } from "../../hooks/custom-hooks/useConfForm";
-import { ipcRenderer } from "electron";
 import { AppController } from "../../hooks/useContext-hooks/appcontroller-hook/appcontroller-hook";
 
 export default function ResultsConfig({ id }) {
@@ -16,7 +15,7 @@ export default function ResultsConfig({ id }) {
   const controller = React.useContext(AppController);
 
   React.useEffect(() => {
-    ipcRenderer
+    window.ipc
       .invoke("get-optimizer-best-config", {
         id,
         javaPath: controller.javaPath,

@@ -11,7 +11,6 @@ import React, {
 } from "react";
 import { AppController } from "../../hooks/useContext-hooks/appcontroller-hook/appcontroller-hook";
 import { Button } from "primereact/button";
-import { ipcRenderer } from "electron";
 import { Divider } from "primereact/divider";
 import { DialogResult } from "../../components/optimizer/DialogResult";
 import { ConfirmPopup, confirmPopup } from "primereact/confirmpopup";
@@ -49,7 +48,7 @@ function OptimizerRuns() {
   };
 
   const accept = (row) => {
-    ipcRenderer
+    window.ipc
       .invoke("delete-optimization", {id: row.id})
       .then((result) => {
         if (result.code === 500) {
@@ -116,7 +115,7 @@ function OptimizerRuns() {
   //Table functions
 
   const reloadOptimizations = () => {
-    ipcRenderer
+    window.ipc
       .invoke("get-optimizations-list")
       .then((result) => {
         console.log(result);
@@ -172,7 +171,7 @@ function OptimizerRuns() {
                   document.documentElement.className.includes("dark") ? "#1f2937" : "",
               }).then((result) => {
                 if (result.isConfirmed) {
-                  ipcRenderer
+                  window.ipc
                     .invoke("delete-optimization", {id: row.id})
                     .then((result) => {
                       if (result.code === 500) {
@@ -284,7 +283,7 @@ function OptimizerRuns() {
   };
 
   const handleDownload = (id: number, type: string, name: string) => {
-    ipcRenderer
+    window.ipc
       .invoke("zip-files", {
         id,
         type,
